@@ -1,0 +1,20 @@
+# Data files with student PII - DO NOT COMMIT
+*.csv
+*.xlsx
+*.xls
+
+# PDF calendar (can be regenerated)
+*.pdf
+
+# JSON data exports (contain student data)
+deep_dive_data.json
+
+# Python cache
+__pycache__/
+*.pyc
+.DS_Store
+
+# Keep the report and code
+!deep_dive_report/
+!*.py
+!*.html

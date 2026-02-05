@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: Low/No Growth Reading - Alpha Austin MS</title>
+<style>
+  :root {
+    --red: #e74c3c; --orange: #f39c12; --yellow: #f1c40f; --green: #27ae60;
+    --blue: #2980b9; --dark: #2c3e50; --light: #ecf0f1; --bg: #f8f9fa;
+    --card-bg: #ffffff; --text: #333; --muted: #7f8c8d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  header { background: var(--dark); color: white; padding: 30px 0; margin-bottom: 30px; }
+  header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 1.6rem; font-weight: 700; }
+  header .subtitle { color: #bdc3c7; font-size: 0.95rem; }
+  .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat-pill { background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; }
+  .stat-pill strong { color: var(--yellow); }
+
+  .issue-section { margin-bottom: 40px; }
+  .issue-section h2 { font-size: 1.3rem; margin-bottom: 20px; color: var(--dark); border-bottom: 3px solid var(--red); display: inline-block; padding-bottom: 4px; }
+  .issue-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+  .issue-card { background: var(--card-bg); border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid var(--red); }
+  .issue-card.orange { border-left-color: var(--orange); }
+  .issue-card.yellow { border-left-color: var(--yellow); }
+  .issue-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .issue-card .issue-num { display: inline-block; background: var(--red); color: white; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-weight: 700; font-size: 0.85rem; margin-right: 8px; }
+  .issue-card.orange .issue-num { background: var(--orange); }
+  .issue-card.yellow .issue-num { background: var(--yellow); }
+  .issue-card p { font-size: 0.9rem; color: #555; margin-bottom: 10px; }
+  .issue-card .affected { font-size: 0.82rem; color: var(--muted); }
+  .issue-card .affected strong { color: var(--dark); }
+  .issue-card .metric-row { display: flex; gap: 15px; margin: 12px 0; flex-wrap: wrap; }
+  .mini-metric { background: var(--bg); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; }
+  .mini-metric .val { font-weight: 700; font-size: 1rem; }
+
+  .students-section { margin-bottom: 40px; }
+  .students-section h2 { font-size: 1.3rem; margin-bottom: 16px; color: var(--dark); border-bottom: 3px solid var(--blue); display: inline-block; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  thead { background: var(--dark); color: white; }
+  th { padding: 12px 10px; text-align: left; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  td { padding: 10px 10px; font-size: 0.85rem; border-bottom: 1px solid #eee; }
+  tr:hover { background: #f0f4f8; }
+  .growth-neg { color: var(--red); font-weight: 700; }
+  .growth-zero { color: var(--orange); font-weight: 700; }
+  .growth-pos { color: var(--green); font-weight: 700; }
+  .pct-warn { color: var(--red); font-weight: 600; }
+  .pct-ok { color: var(--green); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; margin: 1px 2px; white-space: nowrap; }
+  .tag-red { background: #fde8e8; color: #c0392b; }
+  .tag-orange { background: #fef3e2; color: #e67e22; }
+  .tag-blue { background: #e8f0fe; color: #2471a3; }
+  .tag-purple { background: #f0e6f6; color: #7d3c98; }
+  .tag-gray { background: #eee; color: #666; }
+  a.student-link { color: var(--blue); text-decoration: none; font-weight: 600; }
+  a.student-link:hover { text-decoration: underline; }
+
+  .cluster-section { margin-bottom: 40px; }
+  .cluster-section h2 { font-size: 1.3rem; margin-bottom: 16px; color: var(--dark); border-bottom: 3px solid var(--orange); display: inline-block; padding-bottom: 4px; }
+  .cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .cluster-card { background: var(--card-bg); border-radius: 10px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); text-align: center; }
+  .cluster-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
+  .cluster-card .count { font-size: 2rem; font-weight: 800; margin: 6px 0; }
+  .cluster-card .names { font-size: 0.78rem; color: var(--muted); }
+  .cluster-card.cl-red { border-top: 4px solid var(--red); }
+  .cluster-card.cl-red .count { color: var(--red); }
+  .cluster-card.cl-orange { border-top: 4px solid var(--orange); }
+  .cluster-card.cl-orange .count { color: var(--orange); }
+  .cluster-card.cl-yellow { border-top: 4px solid var(--yellow); }
+  .cluster-card.cl-yellow .count { color: var(--yellow); }
+  .cluster-card.cl-blue { border-top: 4px solid var(--blue); }
+  .cluster-card.cl-blue .count { color: var(--blue); }
+  .cluster-card.cl-purple { border-top: 4px solid #8e44ad; }
+  .cluster-card.cl-purple .count { color: #8e44ad; }
+
+  .footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 30px 0; }
+
+  @media (max-width: 768px) {
+    .issue-cards { grid-template-columns: 1fr; }
+    table { font-size: 0.75rem; }
+    th, td { padding: 6px 5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div>
+      <h1>Deep Dive: Low/No Growth Reading Students</h1>
+      <div class="subtitle">Alpha Austin Middle School &middot; Winter 2025-26 MAP Analysis</div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-pill"><strong>21</strong> students</div>
+      <div class="stat-pill">Avg growth: <strong>-2.9 RIT</strong></div>
+      <div class="stat-pill">86 school days analyzed</div>
+      <div class="stat-pill">Aug 14 &ndash; Jan 23</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<section class="issue-section">
+  <h2>Top 3 Systemic Issues</h2>
+  <div class="issue-cards">
+
+    <div class="issue-card">
+      <h3><span class="issue-num">1</span>No Instruction App for G9+ Students</h3>
+      <p>MobyMax caps at G8. Students who have mastered G8+ have <strong>no reading instruction app</strong> &mdash; only Alpha Read remains, which provides limited instructional scaffolding at this level.</p>
+      <div class="metric-row">
+        <div class="mini-metric"><div class="val">5</div>students affected</div>
+        <div class="mini-metric"><div class="val">-5.0</div>avg growth</div>
+        <div class="mini-metric"><div class="val">3 more</div>in MobyMax range but not assigned</div>
+      </div>
+      <div class="affected">
+        <strong>Beyond MobyMax:</strong> Love L., Eddie M., Parker C., Roarke R., Nadine R.<br>
+        <strong>Should have MobyMax:</strong> Kanhai S., Jack B., Valentina M.
+      </div>
+      <p style="margin-top:10px;"><strong>Recommendation:</strong> Urgently source a G9+ reading instruction app. Assign the 3 eligible students to MobyMax immediately.</p>
+    </div>
+
+    <div class="issue-card orange">
+      <h3><span class="issue-num">2</span>Over-Testing &amp; Test Doom Loops</h3>
+      <p>Testing is assessment, not learning. Students trapped in test cycles accumulate XP but <strong>receive no instruction</strong>. 14 of 20 tested students have &lt;50% effective test rate.</p>
+      <div class="metric-row">
+        <div class="mini-metric"><div class="val">2</div>severely over-testing (&gt;50% test XP)</div>
+        <div class="mini-metric"><div class="val">3</div>in doom loops</div>
+        <div class="mini-metric"><div class="val">14/20</div>&lt;50% effective test rate</div>
+      </div>
+      <div class="affected">
+        <strong>Over-testing:</strong> Gwendolyn M. (70% test XP), Sam R. (58% test XP)<br>
+        <strong>Doom loops:</strong> Gwendolyn M. (G7), Elena M. (G6), Sam R. (G5)
+      </div>
+      <p style="margin-top:10px;"><strong>Recommendation:</strong> Cap testing to 1 attempt per grade per week. Break doom loops by requiring 2 weeks of instruction before retesting.</p>
+    </div>
+
+    <div class="issue-card yellow">
+      <h3><span class="issue-num">3</span>Minutes &ne; Growth &mdash; Quality of Engagement</h3>
+      <p>11 of 21 students met or exceeded the 2,150-minute target, yet 9 of those 11 still had <strong>negative growth</strong>. Time alone is not the problem.</p>
+      <div class="metric-row">
+        <div class="mini-metric"><div class="val">11/21</div>met time target</div>
+        <div class="mini-metric"><div class="val">9/11</div>still declined</div>
+        <div class="mini-metric"><div class="val">r = -0.17</div>minutes vs growth</div>
+      </div>
+      <div class="affected">
+        <strong>Contributing factors:</strong> At/ahead-of-grade students lack motivation. Students 3+ grades behind are overwhelmed.
+      </div>
+      <p style="margin-top:10px;"><strong>Recommendation:</strong> Shift from tracking minutes to tracking instructional quality. For at-grade students, introduce enrichment. For large-gap students, create structured catch-up plans.</p>
+    </div>
+
+  </div>
+</section>
+
+<section class="cluster-section">
+  <h2>Student Clusters</h2>
+  <div class="cluster-grid">
+    <div class="cluster-card cl-red">
+      <h4>No Instruction App (G9+)</h4>
+      <div class="count">5</div>
+      <div class="names">Love, Eddie, Parker, Roarke, Nadine</div>
+    </div>
+    <div class="cluster-card cl-orange">
+      <h4>Over-Testing / Doom Loop</h4>
+      <div class="count">3</div>
+      <div class="names">Gwendolyn, Elena, Sam</div>
+    </div>
+    <div class="cluster-card cl-yellow">
+      <h4>Low Minutes (&lt;75%)</h4>
+      <div class="count">5</div>
+      <div class="names">Rhys, Gwendolyn, Sam, Aileya, Tyson</div>
+    </div>
+    <div class="cluster-card cl-blue">
+      <h4>Should Have MobyMax</h4>
+      <div class="count">3</div>
+      <div class="names">Kanhai, Jack, Valentina</div>
+    </div>
+    <div class="cluster-card cl-purple">
+      <h4>Large Gap / Overwhelmed</h4>
+      <div class="count">4</div>
+      <div class="names">Kanhai, Byron, Bobbi, Tyson</div>
+    </div>
+  </div>
+</section>
+
+<section class="students-section">
+  <h2>All 21 Students &mdash; Sorted by Growth</h2>
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Gr</th>
+        <th>Growth</th>
+        <th>Fall&rarr;Win RIT</th>
+        <th>Read Min</th>
+        <th>% Expected</th>
+        <th>Instr XP</th>
+        <th>Test XP</th>
+        <th>% Instr</th>
+        <th>Tests</th>
+        <th>Eff%</th>
+        <th>Issues</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="student-link" href="students/love_l.html">Love L.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-13</td>
+        <td>261 &rarr; 248</td>
+        <td>3,086</td>
+        <td class="pct-ok">144%</td>
+        <td>1,266</td>
+        <td>0</td>
+        <td class="">70%</td>
+        <td>0</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-red">No Instr App</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/kanhai_s.html">Kanhai S.</a></td>
+        <td>8</td>
+        <td class="growth-neg">-11</td>
+        <td>230 &rarr; 219</td>
+        <td>1,941</td>
+        <td class="">90%</td>
+        <td>1,210</td>
+        <td>645</td>
+        <td class="">65%</td>
+        <td>5</td>
+        <td class="">60%</td>
+        <td><span class="tag tag-orange">Needs MobyMax</span> <span class="tag tag-purple">Large Gap</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/eddie_m.html">Eddie M.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-10</td>
+        <td>240 &rarr; 230</td>
+        <td>3,133</td>
+        <td class="pct-ok">146%</td>
+        <td>1,648</td>
+        <td>120</td>
+        <td class="">93%</td>
+        <td>2</td>
+        <td class="">100%</td>
+        <td><span class="tag tag-red">No Instr App</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/rhys_b.html">Rhys B.</a></td>
+        <td>8</td>
+        <td class="growth-neg">-9</td>
+        <td>235 &rarr; 226</td>
+        <td>1,377</td>
+        <td class="pct-warn">64%</td>
+        <td>1,343</td>
+        <td>105</td>
+        <td class="">92%</td>
+        <td>0</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-orange">Low Min</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/byron_a.html">Byron A.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-8</td>
+        <td>238 &rarr; 230</td>
+        <td>2,426</td>
+        <td class="pct-ok">113%</td>
+        <td>1,296</td>
+        <td>0</td>
+        <td class="">93%</td>
+        <td>3</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-purple">Large Gap</span> <span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/armin_r.html">Armin R.</a></td>
+        <td>6</td>
+        <td class="growth-neg">-4</td>
+        <td>231 &rarr; 227</td>
+        <td>3,496</td>
+        <td class="pct-ok">163%</td>
+        <td>2,074</td>
+        <td>120</td>
+        <td class="">94%</td>
+        <td>1</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-gray">Quality Issue</span></td>
+      </tr><tr>
+        <td><a class="student-link" href="students/gwendolyn_m.html">Gwendolyn M.</a></td>
+        <td>8</td>
+        <td class="growth-neg">-4</td>
+        <td>239 &rarr; 235</td>
+        <td>1,299</td>
+        <td class="pct-warn">60%</td>
+        <td>846</td>
+        <td>1,940</td>
+        <td class="pct-warn">30%</td>
+        <td>13</td>
+        <td class="pct-warn">23%</td>
+        <td><span class="tag tag-red">Over-Testing</span> <span class="tag tag-red">Doom Loop G7</span> <span class="tag tag-orange">Low Min</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/bobbi_b.html">Bobbi B.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-3</td>
+        <td>232 &rarr; 229</td>
+        <td>2,139</td>
+        <td class="">100%</td>
+        <td>1,523</td>
+        <td>360</td>
+        <td class="">81%</td>
+        <td>3</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-purple">Large Gap</span> <span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/jack_c.html">Jack C.</a></td>
+        <td>8</td>
+        <td class="growth-neg">-2</td>
+        <td>239 &rarr; 237</td>
+        <td>2,292</td>
+        <td class="pct-ok">107%</td>
+        <td>1,502</td>
+        <td>500</td>
+        <td class="">71%</td>
+        <td>6</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/parker_c.html">Parker C.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-2</td>
+        <td>236 &rarr; 234</td>
+        <td>4,802</td>
+        <td class="pct-ok">223%</td>
+        <td>1,530</td>
+        <td>240</td>
+        <td class="">86%</td>
+        <td>1</td>
+        <td class="">100%</td>
+        <td><span class="tag tag-red">No Instr App</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/elena_m.html">Elena M.</a></td>
+        <td>6</td>
+        <td class="growth-neg">-2</td>
+        <td>233 &rarr; 231</td>
+        <td>2,372</td>
+        <td class="pct-ok">110%</td>
+        <td>2,203</td>
+        <td>735</td>
+        <td class="">75%</td>
+        <td>8</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-red">Doom Loop G6</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/kai_s.html">Kai S.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-1</td>
+        <td>244 &rarr; 243</td>
+        <td>2,398</td>
+        <td class="pct-ok">112%</td>
+        <td>1,568</td>
+        <td>480</td>
+        <td class="">77%</td>
+        <td>4</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/roarke_r.html">Roarke R.</a></td>
+        <td>8</td>
+        <td class="growth-neg">-1</td>
+        <td>245 &rarr; 244</td>
+        <td>2,610</td>
+        <td class="pct-ok">121%</td>
+        <td>1,135</td>
+        <td>740</td>
+        <td class="">60%</td>
+        <td>5</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-red">No Instr App</span> <span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/sam_r.html">Sam R.</a></td>
+        <td>7</td>
+        <td class="growth-neg">-1</td>
+        <td>238 &rarr; 237</td>
+        <td>1,290</td>
+        <td class="pct-warn">60%</td>
+        <td>1,001</td>
+        <td>1,605</td>
+        <td class="pct-warn">36%</td>
+        <td>15</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-red">Over-Testing</span> <span class="tag tag-red">Doom Loop G5</span> <span class="tag tag-orange">Low Min</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/luke_h.html">Luke H.</a></td>
+        <td>6</td>
+        <td class="growth-neg">-1</td>
+        <td>226 &rarr; 225</td>
+        <td>2,047</td>
+        <td class="">95%</td>
+        <td>2,194</td>
+        <td>690</td>
+        <td class="">72%</td>
+        <td>10</td>
+        <td class="pct-warn">20%</td>
+        <td><span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/nathan_s.html">Nathan S.</a></td>
+        <td>6</td>
+        <td class="growth-neg">-1</td>
+        <td>235 &rarr; 234</td>
+        <td>1,870</td>
+        <td class="">87%</td>
+        <td>2,021</td>
+        <td>510</td>
+        <td class="">74%</td>
+        <td>9</td>
+        <td class="pct-warn">11%</td>
+        <td><span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/jack_b.html">Jack B.</a></td>
+        <td>6</td>
+        <td class="growth-zero">0</td>
+        <td>224 &rarr; 224</td>
+        <td>1,983</td>
+        <td class="">92%</td>
+        <td>1,511</td>
+        <td>641</td>
+        <td class="">66%</td>
+        <td>13</td>
+        <td class="pct-warn">38%</td>
+        <td><span class="tag tag-orange">Needs MobyMax</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/valentina_m.html">Valentina M.</a></td>
+        <td>8</td>
+        <td class="growth-zero">0</td>
+        <td>238 &rarr; 238</td>
+        <td>2,331</td>
+        <td class="pct-ok">108%</td>
+        <td>1,356</td>
+        <td>620</td>
+        <td class="">59%</td>
+        <td>12</td>
+        <td class="pct-warn">42%</td>
+        <td><span class="tag tag-orange">Needs MobyMax</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/aileya_k.html">Aileya K.</a></td>
+        <td>8</td>
+        <td class="growth-pos">+1</td>
+        <td>230 &rarr; 231</td>
+        <td>1,584</td>
+        <td class="pct-warn">74%</td>
+        <td>1,417</td>
+        <td>465</td>
+        <td class="">75%</td>
+        <td>4</td>
+        <td class="">100%</td>
+        <td><span class="tag tag-orange">Low Min</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/nadine_r.html">Nadine R.</a></td>
+        <td>6</td>
+        <td class="growth-pos">+1</td>
+        <td>241 &rarr; 242</td>
+        <td>2,821</td>
+        <td class="pct-ok">131%</td>
+        <td>2,033</td>
+        <td>420</td>
+        <td class="">83%</td>
+        <td>3</td>
+        <td class="pct-warn">&mdash;</td>
+        <td><span class="tag tag-red">No Instr App</span> <span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr><tr>
+        <td><a class="student-link" href="students/tyson_k.html">Tyson K.</a></td>
+        <td>6</td>
+        <td class="growth-pos">+1</td>
+        <td>223 &rarr; 224</td>
+        <td>1,202</td>
+        <td class="pct-warn">56%</td>
+        <td>1,091</td>
+        <td>326</td>
+        <td class="">69%</td>
+        <td>6</td>
+        <td class="pct-warn">17%</td>
+        <td><span class="tag tag-orange">Low Min</span> <span class="tag tag-purple">Large Gap</span> <span class="tag tag-gray">Low Eff Tests</span> </td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="issue-section">
+  <h2>Key Data Points</h2>
+  <div class="issue-cards">
+    <div class="issue-card" style="border-left-color: var(--blue);">
+      <h3>Minutes vs Growth</h3>
+      <p>Correlation between reading minutes and growth is <strong>r = -0.17</strong> (not statistically significant). More time does not predict better outcomes.</p>
+      <p>XP vs growth: <strong>r = 0.44, p = 0.048</strong> (weakly significant).</p>
+    </div>
+    <div class="issue-card" style="border-left-color: #8e44ad;">
+      <h3>Year-over-Year Context</h3>
+      <p>14 students have Spring 2025 scores. Average summer slide was <strong>-0.5 RIT</strong>. 7 students are new to Alpha (no prior scores).</p>
+    </div>
+    <div class="issue-card" style="border-left-color: var(--green);">
+      <h3>Effective Test Rate</h3>
+      <p>14 of 20 tested students have &lt;50% effective test rate. 8 students have 0% effective rate &mdash; every test was unproductive.</p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  Deep Dive Analysis &middot; Alpha Austin MS &middot; Winter 2025-26 MAP &middot; Generated Feb 2026
+</div>
+
+</body>
+</html>
