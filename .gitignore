@@ -8,6 +8,7 @@
 
 # JSON data exports (contain student data)
 deep_dive_data.json
+crm_data.json
 
 # Python cache
 __pycache__/
