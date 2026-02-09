@@ -669,7 +669,7 @@ def detect_systemic_issues(students):
     tng_students = issue_counts.get('TIME_NO_GROWTH', [])
     if len(tng_students) > 0:
         avg_g = np.nanmean([s['growth'] for s in tng_students if s['growth'] is not None])
-        avg_mins = round(np.mean([s['total_active_minutes'] for s in tng_students]), 0)
+        avg_daily_mins = round(np.mean([s['daily_avg'] for s in tng_students if s['daily_avg'] is not None]), 1)
         avg_pct = round(np.mean([s['pct_expected'] for s in tng_students]), 0)
         neg_growth = sum(1 for s in tng_students if s['growth'] is not None and s['growth'] < 0)
         ranked.append({
@@ -681,7 +681,7 @@ def detect_systemic_issues(students):
             'avg_growth': round(avg_g, 1) if not np.isnan(avg_g) else None,
             'students': tng_students,
             'detail_counts': {
-                'avg_minutes': int(avg_mins),
+                'avg_daily_minutes': avg_daily_mins,
                 'avg_pct_expected': int(avg_pct),
                 'neg_growth_count': neg_growth,
             }
@@ -1012,7 +1012,7 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
         elif 'detail_counts' in issue and issue['key'] == 'TIME_NO_GROWTH':
             dc = issue['detail_counts']
             detail_html = f"""<div class="mini-metrics">
-              <div class="mini-metric"><div class="val">{dc.get('avg_minutes', 0)}</div>avg active minutes</div>
+              <div class="mini-metric"><div class="val">{dc.get('avg_daily_minutes', 0)}</div>avg minutes per day</div>
               <div class="mini-metric"><div class="val">{dc.get('avg_pct_expected', 0)}%</div>avg % of expected time</div>
               <div class="mini-metric"><div class="val">{dc.get('neg_growth_count', 0)}</div>with negative growth</div>
             </div>"""
