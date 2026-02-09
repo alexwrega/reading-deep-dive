@@ -572,7 +572,7 @@ def detect_systemic_issues(students):
             'color': 'red',
         },
         'TIME_NO_GROWTH': {
-            'title': 'Time ≠ Growth — Quality of Engagement',
+            'title': 'Minutes ≠ Growth — Quality of Engagement',
             'desc': 'Students met or exceeded expected reading minutes but still had zero or negative growth. Time alone is not the problem.',
             'color': 'orange',
         },
@@ -665,36 +665,28 @@ def detect_systemic_issues(students):
         seen_keys.add('NEEDS_HS_INSTRUCTION')
         seen_keys.add('NEEDS_MM_INSTRUCTION')
 
-    for issue_key in ['TIME_NO_GROWTH', 'LOW_ENGAGEMENT',
-                      'LARGE_GAP', 'LOW_EFFECTIVE_TESTS',
-                      'AT_GRADE_NO_MOTIVATION']:
-        if issue_key in seen_keys:
-            continue
-        affected = issue_counts.get(issue_key, [])
-        if len(affected) == 0:
-            continue
-        defn = issue_defs.get(issue_key, {})
-        avg_g = np.nanmean([s['growth'] for s in affected if s['growth'] is not None])
-        entry = {
-            'key': issue_key,
-            'title': defn.get('title', issue_key),
-            'desc': defn.get('desc', ''),
-            'color': defn.get('color', 'gray'),
-            'count': len(affected),
+    # Special issue for Minutes ≠ Growth
+    tng_students = issue_counts.get('TIME_NO_GROWTH', [])
+    if len(tng_students) > 0:
+        avg_g = np.nanmean([s['growth'] for s in tng_students if s['growth'] is not None])
+        avg_mins = round(np.mean([s['total_active_minutes'] for s in tng_students]), 0)
+        avg_pct = round(np.mean([s['pct_expected'] for s in tng_students]), 0)
+        neg_growth = sum(1 for s in tng_students if s['growth'] is not None and s['growth'] < 0)
+        ranked.append({
+            'key': 'TIME_NO_GROWTH',
+            'title': issue_defs['TIME_NO_GROWTH']['title'],
+            'desc': issue_defs['TIME_NO_GROWTH']['desc'],
+            'color': issue_defs['TIME_NO_GROWTH']['color'],
+            'count': len(tng_students),
             'avg_growth': round(avg_g, 1) if not np.isnan(avg_g) else None,
-            'students': affected,
-        }
-        if issue_key == 'LOW_EFFECTIVE_TESTS':
-            total_hmg1_tests = sum(s['hmg_plus1_total'] for s in affected)
-            total_hmg1_passed = sum(s['hmg_plus1_passed'] for s in affected)
-            avg_tests_per_student = round(total_hmg1_tests / len(affected), 1) if len(affected) > 0 else 0
-            total_test_days = sum(s.get('hmg_plus1_test_days', 0) for s in affected)
-            avg_test_days_per_student = round(total_test_days / len(affected), 1) if len(affected) > 0 else 0
-            entry['detail_counts'] = {
-                'avg_test_days_per_student': avg_test_days_per_student,
-                'avg_tests_per_student': avg_tests_per_student,
+            'students': tng_students,
+            'detail_counts': {
+                'avg_minutes': int(avg_mins),
+                'avg_pct_expected': int(avg_pct),
+                'neg_growth_count': neg_growth,
             }
-        ranked.append(entry)
+        })
+        seen_keys.add('TIME_NO_GROWTH')
 
     # Sort by count descending
     ranked.sort(key=lambda x: -x['count'])
@@ -1017,11 +1009,12 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
               <div class="mini-metric"><div class="val">{dc.get('needs_hs', 0)}</div>need HS reading instruction (HMG 8+)</div>
               <div class="mini-metric"><div class="val">{dc.get('needs_mm', 0)}</div>need MM reading instruction (HMG 2-7)</div>
             </div>"""
-        elif 'detail_counts' in issue and issue['key'] == 'LOW_EFFECTIVE_TESTS':
+        elif 'detail_counts' in issue and issue['key'] == 'TIME_NO_GROWTH':
             dc = issue['detail_counts']
             detail_html = f"""<div class="mini-metrics">
-              <div class="mini-metric"><div class="val">{dc.get('avg_test_days_per_student', 0)}</div>avg test days per student</div>
-              <div class="mini-metric"><div class="val">{dc.get('avg_tests_per_student', 0)}</div>avg tests per student</div>
+              <div class="mini-metric"><div class="val">{dc.get('avg_minutes', 0)}</div>avg active minutes</div>
+              <div class="mini-metric"><div class="val">{dc.get('avg_pct_expected', 0)}%</div>avg % of expected time</div>
+              <div class="mini-metric"><div class="val">{dc.get('neg_growth_count', 0)}</div>with negative growth</div>
             </div>"""
         else:
             detail_html = f"""<div class="mini-metrics">
