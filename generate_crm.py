@@ -777,6 +777,14 @@ header .subtitle { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* Sub-tabs (within Executive Summary) */
+.sub-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+.sub-tab { background: none; border: none; color: var(--muted); padding: 10px 18px; font-size: 0.85rem; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; font-family: inherit; }
+.sub-tab:hover { color: var(--text); background: rgba(0,0,0,0.03); }
+.sub-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.sub-pane { display: none; }
+.sub-pane.active { display: block; }
+
 /* KPI Cards */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 24px 0; }
 .kpi-card { background: var(--surface); border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); text-align: center; border: 1px solid var(--border); }
@@ -1221,27 +1229,37 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
 <!-- TAB 1: EXECUTIVE SUMMARY -->
 <div id="tab-summary" class="tab-content active">
 
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-val">{total}</div><div class="kpi-label">Total Reading Students</div></div>
-    <div class="kpi-card {'kpi-red' if avg_growth < 0 else 'kpi-green' if avg_growth > 0 else ''}"><div class="kpi-val">{avg_growth:+.1f}</div><div class="kpi-label">Avg RIT Growth (F&rarr;W)</div></div>
-    <div class="kpi-card"><div class="kpi-val">{pct_met_2x}%</div><div class="kpi-label">Met 2x Growth Target</div></div>
-    <div class="kpi-card kpi-red"><div class="kpi-val">{neg_count}</div><div class="kpi-label">Negative Growth</div></div>
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="showSubTab('all')">All Students</button>
+    <button class="sub-tab" onclick="showSubTab('g38')">Reading G3&ndash;8</button>
+    <button class="sub-tab" onclick="showSubTab('g9')">Reading G9+</button>
   </div>
 
-  <h2 class="section-heading" style="margin-top:24px;">Reading G3&ndash;8 &nbsp;<span style="font-size:0.75rem; font-weight:normal; color:var(--muted);">({g38_total} students)</span></h2>
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-val">{g38_total}</div><div class="kpi-label">Students</div></div>
-    <div class="kpi-card {'kpi-red' if g38_avg_growth < 0 else 'kpi-green' if g38_avg_growth > 0 else ''}"><div class="kpi-val">{g38_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
-    <div class="kpi-card"><div class="kpi-val">{g38_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
-    <div class="kpi-card kpi-red"><div class="kpi-val">{g38_neg}</div><div class="kpi-label">Negative Growth</div></div>
+  <div id="sub-all" class="sub-pane active">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val">{total}</div><div class="kpi-label">Total Reading Students</div></div>
+      <div class="kpi-card {'kpi-red' if avg_growth < 0 else 'kpi-green' if avg_growth > 0 else ''}"><div class="kpi-val">{avg_growth:+.1f}</div><div class="kpi-label">Avg RIT Growth (F&rarr;W)</div></div>
+      <div class="kpi-card"><div class="kpi-val">{pct_met_2x}%</div><div class="kpi-label">Met 2x Growth Target</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-val">{neg_count}</div><div class="kpi-label">Negative Growth</div></div>
+    </div>
   </div>
 
-  <h2 class="section-heading" style="margin-top:24px;">Reading G9+ &nbsp;<span style="font-size:0.75rem; font-weight:normal; color:var(--muted);">({g9_total} students)</span></h2>
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-val">{g9_total}</div><div class="kpi-label">Students</div></div>
-    <div class="kpi-card {'kpi-red' if g9_avg_growth < 0 else 'kpi-green' if g9_avg_growth > 0 else ''}"><div class="kpi-val">{g9_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
-    <div class="kpi-card"><div class="kpi-val">{g9_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
-    <div class="kpi-card kpi-red"><div class="kpi-val">{g9_neg}</div><div class="kpi-label">Negative Growth</div></div>
+  <div id="sub-g38" class="sub-pane">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val">{g38_total}</div><div class="kpi-label">Students</div></div>
+      <div class="kpi-card {'kpi-red' if g38_avg_growth < 0 else 'kpi-green' if g38_avg_growth > 0 else ''}"><div class="kpi-val">{g38_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
+      <div class="kpi-card"><div class="kpi-val">{g38_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-val">{g38_neg}</div><div class="kpi-label">Negative Growth</div></div>
+    </div>
+  </div>
+
+  <div id="sub-g9" class="sub-pane">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val">{g9_total}</div><div class="kpi-label">Students</div></div>
+      <div class="kpi-card {'kpi-red' if g9_avg_growth < 0 else 'kpi-green' if g9_avg_growth > 0 else ''}"><div class="kpi-val">{g9_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
+      <div class="kpi-card"><div class="kpi-val">{g9_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-val">{g9_neg}</div><div class="kpi-label">Negative Growth</div></div>
+    </div>
   </div>
 
   <h2 class="section-heading red" style="margin-top:30px;">Top 3 Systemic Issues</h2>
@@ -1347,6 +1365,13 @@ function showTab(id) {{
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}}
+
+function showSubTab(id) {{
+  document.querySelectorAll('.sub-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('sub-'+id).classList.add('active');
   event.target.classList.add('active');
 }}
 
