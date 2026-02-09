@@ -32,7 +32,8 @@ EXPECTED_DAILY_MINUTES = 25
 PASS_THRESHOLD = 89.5  # 89.5% rounds up to 90%
 
 # App categorization
-INSTRUCTION_APPS = {'Alpha Read', 'MobyMax'}
+INSTRUCTION_APPS = {'MobyMax'}
+PRACTICE_APPS = {'Alpha Read'}
 TESTING_APPS = {'Mastery Track', '100 for 100', 'Alpha Tests', '100x100', '100 for 100'}
 EARLY_LIT_APPS = {'Anton', 'ClearFluency', 'Clear Fluency', 'Amplify', 'Mentava',
                    'Literably', 'Lalilo', 'Lexia Core5', 'FastPhonics', 'TeachTales',
@@ -44,6 +45,8 @@ ADMIN_APPS = {'Manual XP Assign', 'Manual XP', 'Timeback UI', 'TimeBack Dash',
 def categorize_app(app_name):
     if app_name in INSTRUCTION_APPS:
         return 'Instruction'
+    elif app_name in PRACTICE_APPS:
+        return 'Practice'
     elif app_name in TESTING_APPS:
         return 'Testing'
     elif app_name in EARLY_LIT_APPS:
@@ -101,13 +104,12 @@ def compute_school_days():
 # ============================================================
 def load_map_analysis():
     """Load Winter 25-26 MAP Analysis, filter to Reading."""
-    df = pd.read_csv(f"{DATA_DIR}/Winter 25-26 MAP Analysis.csv", encoding='utf-8')
+    df = pd.read_csv(f"{DATA_DIR}/Winter 25-26 MAP Analysis 2025-02-09.csv", encoding='utf-8')
     # Filter to Reading
     df = df[df['Subject'] == 'Reading'].copy()
     # Exclude Early Lit students (Early Reading program, not G3+)
     df = df[~df['Comments'].str.contains('Early Lit', case=False, na=False)]
-    # Exclude HS-level students with HMG > 8 (on other programs)
-    df = df[~((df['Level'] == 'HS') & (pd.to_numeric(df['HMG'], errors='coerce') > 8))]
+    # Note: HS students kept but differentiated by reading level (≤G8 vs G9+)
     df['Email'] = df['Email'].str.strip().str.lower()
     # Clean numeric columns
     for col in ['RIT', 'HMG', 'Age Grade', 'previous RIT Score (F)',
@@ -239,6 +241,9 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
     early_lit = str(row.get('Early Lit', '')).strip().upper()
     campus = row.get('Campus', '')
     level = row.get('Level', '')
+    # HS reading level differentiation (initial, will be recalculated after HMG fallback)
+    hs_reading_category = ''
+    level_display = level
     deep_dive = str(row.get('Deep Dive', ''))
     comments = str(row.get('Comments', ''))
     if comments == 'nan':
@@ -263,6 +268,7 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
     # Per-app breakdown
     app_breakdown = []
     instr_xp = 0
+    practice_xp = 0
     testing_xp = 0
     elit_xp = 0
     admin_xp = 0
@@ -280,6 +286,8 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
             xp_val = ag['XP Earned']
             if cat == 'Instruction':
                 instr_xp += xp_val
+            elif cat == 'Practice':
+                practice_xp += xp_val
             elif cat == 'Testing':
                 testing_xp += xp_val
             elif cat == 'Early Lit':
@@ -299,6 +307,7 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
         app_breakdown.sort(key=lambda a: -a['xp'])
 
     pct_instr = round(instr_xp / total_xp * 100, 1) if total_xp > 0 else 0
+    pct_practice = round(practice_xp / total_xp * 100, 1) if total_xp > 0 else 0
     pct_testing = round(testing_xp / total_xp * 100, 1) if total_xp > 0 else 0
 
     # Per-day activity (for timeline chart)
@@ -337,18 +346,74 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
         test_history.sort(key=lambda t: t['date'])
         test_grades_tested = sorted(test_data['test_grade'].dropna().unique().tolist())
 
-        # Doom loop detection: 3+ failed attempts at same grade
+        # Doom loop detection: 3+ failed attempts at same grade, excluding grades eventually passed
         if has_tests:
             grade_fails = test_data[test_data['score'] < PASS_THRESHOLD].groupby('test_grade').size()
-            doom_grades = [int(g) for g in grade_fails[grade_fails >= 3].index.tolist()]
+            grades_passed = set(int(g) for g in test_data[test_data['score'] >= PASS_THRESHOLD]['test_grade'].dropna().unique())
+            doom_grades = [int(g) for g in grade_fails[grade_fails >= 3].index.tolist() if int(g) not in grades_passed]
 
     eff_rate = round(eff_tests / total_tests * 100, 1) if total_tests > 0 else 0
 
-    # HMG fallback: if MAP HMG is missing, compute from test results
-    if pd.isna(hmg) and has_tests:
+    # HMG fallback: if MAP HMG is missing or very low (0/1), try test results
+    if (pd.isna(hmg) or hmg <= 1) and has_tests:
         passed_tests = test_data[test_data['score'] >= PASS_THRESHOLD]
         if len(passed_tests) > 0:
-            hmg = passed_tests['test_grade'].max()
+            test_hmg = passed_tests['test_grade'].max()
+            # Only use test-derived HMG if it's better than current
+            if pd.isna(hmg) or test_hmg > hmg:
+                hmg = test_hmg
+
+    # --- HMG+1 effective test rate (tests at the grade above final HMG) ---
+    hmg_plus1_total = 0
+    hmg_plus1_passed = 0
+    hmg_plus1_days = set()
+    if has_tests and test_history and pd.notna(hmg):
+        target_grade = int(hmg) + 1
+        for t in test_history:
+            if t['grade'] == target_grade:
+                hmg_plus1_total += 1
+                if t['date']:
+                    hmg_plus1_days.add(t['date'])
+                if t['passed']:
+                    hmg_plus1_passed += 1
+    hmg_plus1_test_days = len(hmg_plus1_days)
+    hmg_plus1_eff_rate = round(hmg_plus1_passed / hmg_plus1_total * 100, 1) if hmg_plus1_total > 0 else 0
+
+    # --- Reading grade (HMG + 1) ---
+    reading_grade = int(hmg + 1) if pd.notna(hmg) else None
+
+    # --- Reading group assignment (G3-8 vs G9+) ---
+    # G9+: HS level students with HMG >= 8 (reading grade >= 9)
+    # G3-8: HMG 2-7 (any student) OR age grade 3-8 with HMG 2-12
+    # Students with no usable HMG: assign by age grade if possible, else G3-8 default
+    reading_group = ''
+    if level == 'HS' and pd.notna(hmg) and hmg >= 8:
+        reading_group = 'G9+'
+    elif pd.notna(hmg) and 2 <= hmg <= 7:
+        reading_group = 'G3-8'
+    elif pd.notna(age_grade) and 3 <= age_grade <= 8 and pd.notna(hmg) and 2 <= hmg <= 12:
+        reading_group = 'G3-8'
+    elif pd.notna(hmg) and hmg >= 8 and level == 'HS':
+        reading_group = 'G9+'
+    elif pd.isna(hmg) or hmg <= 1:
+        # No usable HMG — assign by age grade
+        if pd.notna(age_grade) and age_grade >= 9 and level == 'HS':
+            reading_group = 'G9+'
+        else:
+            reading_group = 'G3-8'
+    else:
+        # Catch-all: HMG 8-12 for non-HS students
+        reading_group = 'G3-8'
+
+    # --- HS reading category (uses post-fallback HMG) ---
+    if level == 'HS':
+        if pd.notna(hmg) and hmg <= 7:
+            hs_reading_category = 'HS (≤G8)'
+        elif pd.notna(hmg) and hmg >= 8:
+            hs_reading_category = 'HS (G9+)'
+        else:
+            hs_reading_category = 'HS (No HMG)'
+        level_display = hs_reading_category
 
     # --- Spring MAP / Year-over-year ---
     summer_slide = None
@@ -378,20 +443,24 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
 
     # --- Issue detection ---
     issues = []
-    # No instruction app (beyond G8)
-    if pd.notna(hmg) and hmg > 8:
-        issues.append('NO_INSTRUCTION_APP')
-    # In MobyMax range but no MobyMax XP
-    elif pd.notna(hmg) and 3 <= hmg <= 8:
-        has_moby = any(a['app'] == 'MobyMax' and a['xp'] > 0 for a in app_breakdown)
-        if not has_moby and has_daily:
-            issues.append('SHOULD_HAVE_MOBYMAX')
+    # No instruction app (beyond G8) — needs HS reading instruction
+    if pd.notna(hmg) and hmg >= 8:
+        issues.append('NEEDS_HS_INSTRUCTION')
+    # In MobyMax range but never enrolled in MobyMax
+    elif pd.notna(hmg) and 2 <= hmg <= 7:
+        ever_enrolled_mm = any(a['app'] == 'MobyMax' for a in app_breakdown)
+        if not ever_enrolled_mm and has_daily:
+            issues.append('NEEDS_MM_INSTRUCTION')
     # Over-testing
     if pct_testing > 50:
         issues.append('OVER_TESTING')
-    # Doom loop
+    # Doom loop (all grades)
+    doom_loop_above_hmg = False
     if doom_grades:
         issues.append('DOOM_LOOP')
+        # Check if any doom loop is above HMG (for systemic issue count)
+        if pd.isna(hmg) or any(g > int(hmg) for g in doom_grades):
+            doom_loop_above_hmg = True
     # Low minutes
     if pct_expected < 50:
         issues.append('LOW_ENGAGEMENT')
@@ -404,8 +473,8 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
     # Large gap
     if pd.notna(gap) and gap <= -3:
         issues.append('LARGE_GAP')
-    # Low effective test rate
-    if total_tests > 2 and eff_rate < 50:
+    # Low effective test rate (at HMG+1)
+    if hmg_plus1_total > 2 and hmg_plus1_eff_rate < 50:
         issues.append('LOW_EFFECTIVE_TESTS')
 
     return {
@@ -414,10 +483,14 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
         'email': email,
         'campus': campus,
         'level': level,
+        'level_display': level_display,
+        'hs_reading_category': hs_reading_category,
         'age_grade': int(age_grade) if pd.notna(age_grade) else None,
         'early_lit': early_lit == 'YES',
         'rit': float(rit) if pd.notna(rit) else None,
         'hmg': float(hmg) if pd.notna(hmg) else None,
+        'reading_grade': reading_grade,
+        'reading_group': reading_group,
         'fall_rit': float(fall_rit) if pd.notna(fall_rit) else None,
         'projected_rit': float(projected_rit) if pd.notna(projected_rit) else None,
         'winter_rit': float(winter_rit) if pd.notna(winter_rit) else None,
@@ -447,10 +520,12 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
         'pct_expected': pct_expected,
         'daily_avg': daily_avg,
         'instr_xp': round(instr_xp, 1),
+        'practice_xp': round(practice_xp, 1),
         'testing_xp': round(testing_xp, 1),
         'elit_xp': round(elit_xp, 1),
         'admin_xp': round(admin_xp, 1),
         'pct_instr': pct_instr,
+        'pct_practice': pct_practice,
         'pct_testing': pct_testing,
         'app_breakdown': app_breakdown,
         'daily_activity': daily_activity,
@@ -459,7 +534,12 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
         'total_tests': total_tests,
         'eff_tests': eff_tests,
         'eff_rate': eff_rate,
+        'hmg_plus1_total': hmg_plus1_total,
+        'hmg_plus1_passed': hmg_plus1_passed,
+        'hmg_plus1_eff_rate': hmg_plus1_eff_rate,
+        'hmg_plus1_test_days': hmg_plus1_test_days,
         'doom_grades': doom_grades,
+        'doom_loop_above_hmg': doom_loop_above_hmg,
         'test_grades': [int(g) for g in test_grades_tested],
         'test_history': test_history,
         # Spring / YoY
@@ -476,10 +556,15 @@ def compute_student_metrics(row, daily_data, test_data, spring_rit,
 def detect_systemic_issues(students):
     """Analyze all students and return top 3 systemic issues."""
     issue_defs = {
-        'NO_INSTRUCTION_APP': {
-            'title': 'No Instruction App for G9+ Students',
-            'desc': 'MobyMax caps at G8. Students who have mastered G8+ have no reading instruction app — only Alpha Read remains.',
+        'NEEDS_HS_INSTRUCTION': {
+            'title': 'Needs HS Reading Instruction',
+            'desc': 'MobyMax caps at G8. Students at HMG 8+ need a high school reading instruction solution beyond Alpha Read.',
             'color': 'red',
+        },
+        'NEEDS_MM_INSTRUCTION': {
+            'title': 'Needs MM Reading Instruction',
+            'desc': 'Students within MobyMax range (HMG 2-7) have never been enrolled in MobyMax for structured reading instruction.',
+            'color': 'orange',
         },
         'OVER_TESTING': {
             'title': 'Over-Testing & Test Doom Loops',
@@ -501,11 +586,6 @@ def detect_systemic_issues(students):
             'desc': 'Students stuck retaking the same grade-level test 3+ times without passing (need 90%). Testing without instruction is unproductive.',
             'color': 'red',
         },
-        'SHOULD_HAVE_MOBYMAX': {
-            'title': 'Missing MobyMax Assignment',
-            'desc': 'Students are within MobyMax range (G3-G8) but have not been assigned to MobyMax for structured reading instruction.',
-            'color': 'orange',
-        },
         'LARGE_GAP': {
             'title': 'Large Grade Gap — 3+ Grades Behind',
             'desc': 'Students are 3 or more grade levels behind age grade, indicating they may be overwhelmed by the gap.',
@@ -513,7 +593,7 @@ def detect_systemic_issues(students):
         },
         'LOW_EFFECTIVE_TESTS': {
             'title': 'Low Effective Test Rate',
-            'desc': 'Students have taken multiple tests but fewer than half resulted in passing (≥90%). Many test attempts are unproductive.',
+            'desc': 'Students have taken 3+ tests at HMG+1 but fewer than half resulted in passing (≥90%). Only tests at the grade above the student\'s running HMG on the test date are counted.',
             'color': 'gray',
         },
         'AT_GRADE_NO_MOTIVATION': {
@@ -543,27 +623,50 @@ def detect_systemic_issues(students):
     # Special merged issue for over-testing + doom loops
     ot_students = issue_counts.get('OVER_TESTING', [])
     dl_students = issue_counts.get('DOOM_LOOP', [])
+    dl_above_hmg_students = [s for s in dl_students if s.get('doom_loop_above_hmg', False)]
     merged_students = {s['email']: s for s in ot_students + dl_students}
     if len(merged_students) > 0:
         avg_g = np.nanmean([s['growth'] for s in merged_students.values() if s['growth'] is not None])
         ranked.append({
             'key': 'OVER_TESTING_DOOM',
             'title': 'Over-Testing & Test Doom Loops',
-            'desc': 'Testing is assessment, not learning. Students spending &gt;50% XP on tests, or stuck retaking the same grade 3+ times without passing (need 90%).',
+            'desc': 'Testing is assessment, not learning. Students spending &gt;50% XP on tests, or stuck retaking the same grade above HMG 3+ times without passing (need 90%).',
             'color': 'red',
             'count': len(merged_students),
             'avg_growth': round(avg_g, 1) if not np.isnan(avg_g) else None,
             'students': list(merged_students.values()),
             'detail_counts': {
                 'over_testing': len(ot_students),
-                'doom_loops': len(dl_students),
+                'doom_loops': len(dl_above_hmg_students),
             }
         })
         seen_keys.add('OVER_TESTING')
         seen_keys.add('DOOM_LOOP')
 
-    for issue_key in ['NO_INSTRUCTION_APP', 'TIME_NO_GROWTH', 'LOW_ENGAGEMENT',
-                      'SHOULD_HAVE_MOBYMAX', 'LARGE_GAP', 'LOW_EFFECTIVE_TESTS',
+    # Special merged issue for Missing Reading Instruction
+    hs_instr = issue_counts.get('NEEDS_HS_INSTRUCTION', [])
+    mm_instr = issue_counts.get('NEEDS_MM_INSTRUCTION', [])
+    merged_instr = {s['email']: s for s in hs_instr + mm_instr}
+    if len(merged_instr) > 0:
+        avg_g = np.nanmean([s['growth'] for s in merged_instr.values() if s['growth'] is not None])
+        ranked.append({
+            'key': 'MISSING_READING_INSTRUCTION',
+            'title': 'Missing Reading Instruction',
+            'desc': 'Students without appropriate reading instruction. HMG 8+ students need HS-level reading instruction. HMG 2-7 students have never been enrolled in MobyMax.',
+            'color': 'orange',
+            'count': len(merged_instr),
+            'avg_growth': round(avg_g, 1) if not np.isnan(avg_g) else None,
+            'students': list(merged_instr.values()),
+            'detail_counts': {
+                'needs_hs': len(hs_instr),
+                'needs_mm': len(mm_instr),
+            }
+        })
+        seen_keys.add('NEEDS_HS_INSTRUCTION')
+        seen_keys.add('NEEDS_MM_INSTRUCTION')
+
+    for issue_key in ['TIME_NO_GROWTH', 'LOW_ENGAGEMENT',
+                      'LARGE_GAP', 'LOW_EFFECTIVE_TESTS',
                       'AT_GRADE_NO_MOTIVATION']:
         if issue_key in seen_keys:
             continue
@@ -572,7 +675,7 @@ def detect_systemic_issues(students):
             continue
         defn = issue_defs.get(issue_key, {})
         avg_g = np.nanmean([s['growth'] for s in affected if s['growth'] is not None])
-        ranked.append({
+        entry = {
             'key': issue_key,
             'title': defn.get('title', issue_key),
             'desc': defn.get('desc', ''),
@@ -580,7 +683,18 @@ def detect_systemic_issues(students):
             'count': len(affected),
             'avg_growth': round(avg_g, 1) if not np.isnan(avg_g) else None,
             'students': affected,
-        })
+        }
+        if issue_key == 'LOW_EFFECTIVE_TESTS':
+            total_hmg1_tests = sum(s['hmg_plus1_total'] for s in affected)
+            total_hmg1_passed = sum(s['hmg_plus1_passed'] for s in affected)
+            avg_tests_per_student = round(total_hmg1_tests / len(affected), 1) if len(affected) > 0 else 0
+            total_test_days = sum(s.get('hmg_plus1_test_days', 0) for s in affected)
+            avg_test_days_per_student = round(total_test_days / len(affected), 1) if len(affected) > 0 else 0
+            entry['detail_counts'] = {
+                'avg_test_days_per_student': avg_test_days_per_student,
+                'avg_tests_per_student': avg_tests_per_student,
+            }
+        ranked.append(entry)
 
     # Sort by count descending
     ranked.sort(key=lambda x: -x['count'])
@@ -707,8 +821,8 @@ header .subtitle { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
 /* Tables */
 table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--border); }
 thead { background: var(--primary); color: white; }
-th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; }
-th:hover { background: rgba(255,255,255,0.1); }
+th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; background: var(--primary); color: white; transition: background 0.15s; }
+th:hover { background: var(--primary-hover); color: white; }
 th .sort-arrow { font-size: 0.65rem; margin-left: 3px; opacity: 0.4; }
 th.sorted .sort-arrow { opacity: 1; }
 td { padding: 8px; font-size: 0.83rem; border-bottom: 1px solid var(--border); }
@@ -779,6 +893,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 .stacked-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; background: var(--border); margin: 10px 0; }
 .bar-seg { height: 100%; }
 .bar-seg.instr { background: var(--success); }
+.bar-seg.practice { background: var(--primary); }
 .bar-seg.test { background: var(--warning); }
 .bar-seg.elit { background: var(--purple); }
 .bar-seg.admin { background: #94A3B8; }
@@ -787,7 +902,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* App table */
 .app-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--border); cursor: default; }
+.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: white; padding: 8px 8px; background: var(--primary); cursor: default; }
 .app-table td { padding: 8px; font-size: 0.85rem; border-bottom: 1px solid #F1F5F9; }
 
 /* RIT timeline */
@@ -816,8 +931,9 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* Test history table */
 .test-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; }
-.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); padding: 6px 6px; border-bottom: 2px solid var(--border); cursor: default; background: transparent; }
+.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: white; padding: 8px 6px; background: var(--primary); cursor: default; }
 .test-table td { padding: 6px; border-bottom: 1px solid #F1F5F9; }
+.app-table th:hover, .test-table th:hover { background: var(--primary-hover); }
 .test-table .pass { color: var(--success); font-weight: 600; }
 .test-table .fail { color: var(--danger); }
 
@@ -859,21 +975,53 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
     met_2x = sum(1 for s in students if s['met_2x'])
     pct_met_2x = round(met_2x / total * 100) if total > 0 else 0
 
+    # Reading group stats
+    g38_students = [s for s in students if s['reading_group'] == 'G3-8']
+    g9_students = [s for s in students if s['reading_group'] == 'G9+']
+
+    g38_total = len(g38_students)
+    g38_with_growth = [s for s in g38_students if s['growth'] is not None]
+    g38_avg_growth = np.mean([s['growth'] for s in g38_with_growth]) if g38_with_growth else 0
+    g38_neg = sum(1 for s in g38_with_growth if s['growth'] < 0)
+    g38_pos = sum(1 for s in g38_with_growth if s['growth'] > 0)
+    g38_met_2x = sum(1 for s in g38_students if s['met_2x'])
+    g38_pct_2x = round(g38_met_2x / g38_total * 100) if g38_total > 0 else 0
+
+    g9_total = len(g9_students)
+    g9_with_growth = [s for s in g9_students if s['growth'] is not None]
+    g9_avg_growth = np.mean([s['growth'] for s in g9_with_growth]) if g9_with_growth else 0
+    g9_neg = sum(1 for s in g9_with_growth if s['growth'] < 0)
+    g9_pos = sum(1 for s in g9_with_growth if s['growth'] > 0)
+    g9_met_2x = sum(1 for s in g9_students if s['met_2x'])
+    g9_pct_2x = round(g9_met_2x / g9_total * 100) if g9_total > 0 else 0
+
     # --- Issue cards ---
     issue_html = ""
     for i, issue in enumerate(systemic_issues, 1):
         color = issue['color']
         avg_g = f"{issue['avg_growth']:+.1f}" if issue['avg_growth'] is not None else "N/A"
-        names = ", ".join([s['name'] for s in issue['students'][:10]])
+        names = ", ".join([f'<a href="students/{s["slug"]}.html" class="student-link">{s["name"]}</a>' for s in issue['students'][:10]])
         if len(issue['students']) > 10:
-            names += f" + {len(issue['students']) - 10} more"
+            names += f" +more"
 
         detail_html = ""
-        if 'detail_counts' in issue:
+        if 'detail_counts' in issue and issue['key'] == 'OVER_TESTING_DOOM':
             dc = issue['detail_counts']
             detail_html = f"""<div class="mini-metrics">
               <div class="mini-metric"><div class="val">{dc.get('over_testing', 0)}</div>over-testing (&gt;50% test XP)</div>
-              <div class="mini-metric"><div class="val">{dc.get('doom_loops', 0)}</div>in doom loops</div>
+              <div class="mini-metric"><div class="val">{dc.get('doom_loops', 0)}</div>in test doom loops</div>
+            </div>"""
+        elif 'detail_counts' in issue and issue['key'] == 'MISSING_READING_INSTRUCTION':
+            dc = issue['detail_counts']
+            detail_html = f"""<div class="mini-metrics">
+              <div class="mini-metric"><div class="val">{dc.get('needs_hs', 0)}</div>need HS reading instruction (HMG 8+)</div>
+              <div class="mini-metric"><div class="val">{dc.get('needs_mm', 0)}</div>need MM reading instruction (HMG 2-7)</div>
+            </div>"""
+        elif 'detail_counts' in issue and issue['key'] == 'LOW_EFFECTIVE_TESTS':
+            dc = issue['detail_counts']
+            detail_html = f"""<div class="mini-metrics">
+              <div class="mini-metric"><div class="val">{dc.get('avg_test_days_per_student', 0)}</div>avg test days per student</div>
+              <div class="mini-metric"><div class="val">{dc.get('avg_tests_per_student', 0)}</div>avg tests per student</div>
             </div>"""
         else:
             detail_html = f"""<div class="mini-metrics">
@@ -890,12 +1038,14 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
         </div>"""
 
     # --- Campus table rows ---
+    sorted_campuses = sorted(campus_stats, key=lambda c: c['avg_growth'] if c['avg_growth'] is not None else 999)
     campus_rows = ""
-    for cs in sorted(campus_stats, key=lambda c: c['avg_growth'] if c['avg_growth'] is not None else 999):
+    campus_js_data = []
+    for idx, cs in enumerate(sorted_campuses):
         avg_g = growth_display(cs['avg_growth'])
         g_class = growth_class(cs['avg_growth'])
         pct2x = f"{cs['pct_met_2x']:.0f}%" if cs['pct_met_2x'] is not None else "&mdash;"
-        campus_rows += f"""<tr>
+        campus_rows += f"""<tr data-idx="{idx}">
           <td>{cs['campus']}</td>
           <td>{cs['count']}</td>
           <td>{cs['levels']}</td>
@@ -903,6 +1053,12 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
           <td>{cs['neg_count']}/{cs['count']}</td>
           <td>{pct2x}</td>
         </tr>"""
+        campus_js_data.append({
+            'n': cs['campus'], 'c': cs['count'],
+            'ag': cs['avg_growth'], 'neg': cs['neg_count'],
+            'pct2x': cs['pct_met_2x']
+        })
+    campus_js = json.dumps(campus_js_data, separators=(',', ':'))
 
     # --- Campus cards for Tab 2 ---
     campus_cards = ""
@@ -948,11 +1104,15 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
             'n': s['name'],
             'c': s['campus'],
             'l': s['level'],
+            'ld': s['level_display'],
+            'rg': s['reading_group'],
             'g': s['age_grade'],
             'el': s['early_lit'],
             'gr': s['growth'],
             'gc': s['growth_category'],
             'dd': s['deep_dive'],
+            'hmg': s['hmg'],
+            'm2x': s['met_2x'],
         })
     js_json = json.dumps(js_data, separators=(',', ':'))
 
@@ -969,8 +1129,8 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
 
         # Issue tags
         tags = ""
-        if 'NO_INSTRUCTION_APP' in s['issues']:
-            tags += '<span class="tag tag-red">No Instr App</span> '
+        if 'NEEDS_HS_INSTRUCTION' in s['issues']:
+            tags += '<span class="tag tag-red">Needs HS Reading</span> '
         if 'OVER_TESTING' in s['issues']:
             tags += '<span class="tag tag-red">Over-Testing</span> '
         if 'DOOM_LOOP' in s['issues']:
@@ -979,12 +1139,15 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
             tags += '<span class="tag tag-orange">Low Engagement</span> '
         if 'TIME_NO_GROWTH' in s['issues']:
             tags += '<span class="tag tag-yellow">Time≠Growth</span> '
-        if 'SHOULD_HAVE_MOBYMAX' in s['issues']:
-            tags += '<span class="tag tag-orange">Needs MobyMax</span> '
+        if 'NEEDS_MM_INSTRUCTION' in s['issues']:
+            tags += '<span class="tag tag-orange">Needs MM Reading</span> '
         if 'AT_GRADE_NO_MOTIVATION' in s['issues']:
             tags += '<span class="tag tag-blue">At Grade</span> '
         if 'LARGE_GAP' in s['issues']:
             tags += '<span class="tag tag-purple">Large Gap</span> '
+        # HS reading category tag
+        if s['hs_reading_category'] == 'HS (G9+)':
+            tags += '<span class="tag tag-purple">G9+ Reading</span> '
         if not tags.strip():
             if s['growth'] is not None and s['growth'] > 0:
                 tags = '<span class="tag tag-green">Growing</span>'
@@ -994,7 +1157,7 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
         table_rows += f"""<tr{dd_class} data-idx="{idx}">
           <td><a class="student-link" href="students/{s['slug']}.html">{s['name']}</a></td>
           <td>{s['campus'].replace('Alpha School ', '').replace('Alpha ', '')}</td>
-          <td>{s['level']}</td>
+          <td>{s['level_display']}</td>
           <td>{s['age_grade'] if s['age_grade'] is not None else '&mdash;'}</td>
           <td>{fmt_num(s['hmg'])}</td>
           <td class="{g_class}">{growth_display(s['growth'])}</td>
@@ -1008,18 +1171,23 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
 
     # Build filter dropdowns
     campuses = sorted(set(s['campus'] for s in students))
-    levels = sorted(set(s['level'] for s in students if s['level']))
+    level_displays = sorted(set(s['level_display'] for s in students if s['level_display']))
     grades = sorted(set(s['age_grade'] for s in students if s['age_grade'] is not None))
 
     campus_opts = '<option value="">All Campuses</option>'
     for c in campuses:
         campus_opts += f'<option value="{c}">{c.replace("Alpha School ", "").replace("Alpha ", "")}</option>'
     level_opts = '<option value="">All Levels</option>'
-    for l in levels:
-        level_opts += f'<option value="{l}">{l}</option>'
+    for ld in level_displays:
+        level_opts += f'<option value="{ld}">{ld}</option>'
     grade_opts = '<option value="">All Grades</option>'
     for g in grades:
         grade_opts += f'<option value="{g}">Grade {g}</option>'
+    hmg_values = sorted(set(int(s['hmg']) for s in students if s['hmg'] is not None))
+    hmg_opts = '<option value="">All HMG</option>'
+    for h in hmg_values:
+        hmg_opts += f'<option value="{h}">HMG {h}</option>'
+    hmg_opts += '<option value="none">No HMG</option>'
 
     # Build the HTML
     html = f"""<!DOCTYPE html>
@@ -1036,7 +1204,7 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
   <div class="container">
     <div>
       <h1>Reading 3+ Results</h1>
-      <div class="subtitle">Winter 2025-26 MAP Analysis &middot; All Campuses</div>
+      <div class="subtitle">Winter 2025-26 MAP Analysis &middot; All Campuses &middot; <span style="background:rgba(255,255,255,0.2); padding:2px 10px; border-radius:10px; font-size:0.8rem;">Updated Feb 9</span></div>
     </div>
     <div class="stats-bar">
       <div class="stat-pill"><strong>{total}</strong> students</div>
@@ -1061,22 +1229,43 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
 <div id="tab-summary" class="tab-content active">
 
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-val">{total}</div><div class="kpi-label">Reading Students</div></div>
-    <div class="kpi-card kpi-red"><div class="kpi-val">{avg_growth:+.1f}</div><div class="kpi-label">Avg RIT Growth (F&rarr;W)</div></div>
+    <div class="kpi-card"><div class="kpi-val">{total}</div><div class="kpi-label">Total Reading Students</div></div>
+    <div class="kpi-card {'kpi-red' if avg_growth < 0 else 'kpi-green' if avg_growth > 0 else ''}"><div class="kpi-val">{avg_growth:+.1f}</div><div class="kpi-label">Avg RIT Growth (F&rarr;W)</div></div>
     <div class="kpi-card"><div class="kpi-val">{pct_met_2x}%</div><div class="kpi-label">Met 2x Growth Target</div></div>
     <div class="kpi-card kpi-red"><div class="kpi-val">{neg_count}</div><div class="kpi-label">Negative Growth</div></div>
   </div>
 
-  <h2 class="section-heading red">Top 3 Systemic Issues</h2>
+  <h2 class="section-heading" style="margin-top:24px;">Reading G3&ndash;8 &nbsp;<span style="font-size:0.75rem; font-weight:normal; color:var(--muted);">({g38_total} students)</span></h2>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-val">{g38_total}</div><div class="kpi-label">Students</div></div>
+    <div class="kpi-card {'kpi-red' if g38_avg_growth < 0 else 'kpi-green' if g38_avg_growth > 0 else ''}"><div class="kpi-val">{g38_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
+    <div class="kpi-card"><div class="kpi-val">{g38_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-val">{g38_neg}</div><div class="kpi-label">Negative Growth</div></div>
+  </div>
+
+  <h2 class="section-heading" style="margin-top:24px;">Reading G9+ &nbsp;<span style="font-size:0.75rem; font-weight:normal; color:var(--muted);">({g9_total} students)</span></h2>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-val">{g9_total}</div><div class="kpi-label">Students</div></div>
+    <div class="kpi-card {'kpi-red' if g9_avg_growth < 0 else 'kpi-green' if g9_avg_growth > 0 else ''}"><div class="kpi-val">{g9_avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
+    <div class="kpi-card"><div class="kpi-val">{g9_pct_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-val">{g9_neg}</div><div class="kpi-label">Negative Growth</div></div>
+  </div>
+
+  <h2 class="section-heading red" style="margin-top:30px;">Top 3 Systemic Issues</h2>
   <div class="issue-cards">
     {issue_html}
   </div>
 
   <h2 class="section-heading">Campus Performance</h2>
   <div style="overflow-x:auto;">
-  <table>
+  <table id="campus-table">
     <thead><tr>
-      <th>Campus</th><th>Students</th><th>Levels</th><th>Avg Growth</th><th>Neg Growth</th><th>Met 2x</th>
+      <th onclick="sortCampus(0,'n',false)">Campus <span class="sort-arrow">&#9650;</span></th>
+      <th onclick="sortCampus(1,'c',true)">Students <span class="sort-arrow">&#9650;</span></th>
+      <th>Levels</th>
+      <th onclick="sortCampus(3,'ag',true)">Avg Growth <span class="sort-arrow">&#9650;</span></th>
+      <th onclick="sortCampus(4,'neg',true)">Neg Growth <span class="sort-arrow">&#9650;</span></th>
+      <th onclick="sortCampus(5,'pct2x',true)">Met 2x <span class="sort-arrow">&#9650;</span></th>
     </tr></thead>
     <tbody>{campus_rows}</tbody>
   </table>
@@ -1106,6 +1295,7 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
     <select id="f-campus" onchange="applyFilters()">{campus_opts}</select>
     <select id="f-level" onchange="applyFilters()">{level_opts}</select>
     <select id="f-grade" onchange="applyFilters()">{grade_opts}</select>
+    <select id="f-hmg" onchange="applyFilters()">{hmg_opts}</select>
     <select id="f-growth" onchange="applyFilters()">
       <option value="">All Growth</option>
       <option value="negative">Negative</option>
@@ -1121,12 +1311,19 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
     <span class="filter-count" id="filter-count">{total} students</span>
   </div>
 
+  <div id="filter-summary" class="kpi-grid" style="margin-bottom:20px;">
+    <div class="kpi-card"><div class="kpi-val" id="fs-count">{total}</div><div class="kpi-label">Students</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="fs-growth">{avg_growth:+.1f}</div><div class="kpi-label">Avg Growth</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="fs-2x">{pct_met_2x}%</div><div class="kpi-label">Met 2x Target</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="fs-neg">{neg_count}</div><div class="kpi-label">Negative Growth</div></div>
+  </div>
+
   <div style="overflow-x:auto;">
   <table id="student-table">
     <thead><tr>
       <th onclick="sortTable(0,'n',false)">Student <span class="sort-arrow">&#9650;</span></th>
       <th onclick="sortTable(1,'c',false)">Campus <span class="sort-arrow">&#9650;</span></th>
-      <th onclick="sortTable(2,'l',false)">Level <span class="sort-arrow">&#9650;</span></th>
+      <th onclick="sortTable(2,'ld',false)">Level <span class="sort-arrow">&#9650;</span></th>
       <th onclick="sortTable(3,'g',true)">Gr <span class="sort-arrow">&#9650;</span></th>
       <th>HMG</th>
       <th onclick="sortTable(5,'gr',true)">Growth <span class="sort-arrow">&#9650;</span></th>
@@ -1147,7 +1344,7 @@ def generate_dashboard(students, campus_stats, systemic_issues, effective_days, 
 </div>
 
 <div class="footer">
-  Reading 3+ Results &middot; Winter 2025-26 MAP Analysis &middot; Generated Feb 2026
+  Reading 3+ Results &middot; Winter 2025-26 MAP Analysis &middot; Updated Feb 9, 2026
 </div>
 
 <script>
@@ -1164,26 +1361,43 @@ function applyFilters() {{
   const campus = document.getElementById('f-campus').value;
   const level = document.getElementById('f-level').value;
   const grade = document.getElementById('f-grade').value;
+  const hmgF = document.getElementById('f-hmg').value;
   const growth = document.getElementById('f-growth').value;
   const el = document.getElementById('f-earlylit').value;
   const search = document.getElementById('f-search').value.toLowerCase();
   const rows = document.querySelectorAll('#student-table tbody tr');
   let vis = 0;
+  let sumGrowth = 0, countGrowth = 0, countNeg = 0, count2x = 0;
   rows.forEach(row => {{
     const i = parseInt(row.dataset.idx);
     const s = S[i];
     let show = true;
     if (campus && s.c !== campus) show = false;
-    if (level && s.l !== level) show = false;
+    if (level && s.ld !== level) show = false;
     if (grade && s.g != grade) show = false;
+    if (hmgF === 'none' && s.hmg != null) show = false;
+    if (hmgF && hmgF !== 'none' && (s.hmg == null || Math.floor(s.hmg) != parseInt(hmgF))) show = false;
     if (growth && s.gc !== growth) show = false;
     if (el === 'yes' && !s.el) show = false;
     if (el === 'no' && s.el) show = false;
     if (search && !s.n.toLowerCase().includes(search)) show = false;
     row.style.display = show ? '' : 'none';
-    if (show) vis++;
+    if (show) {{
+      vis++;
+      if (s.gr != null) {{ sumGrowth += s.gr; countGrowth++; if (s.gr < 0) countNeg++; }}
+      if (s.m2x) count2x++;
+    }}
   }});
   document.getElementById('filter-count').textContent = vis + ' students';
+  const avgG = countGrowth > 0 ? (sumGrowth / countGrowth) : 0;
+  const pct2x = vis > 0 ? Math.round(count2x / vis * 100) : 0;
+  document.getElementById('fs-count').textContent = vis;
+  document.getElementById('fs-growth').textContent = (avgG >= 0 ? '+' : '') + avgG.toFixed(1);
+  document.getElementById('fs-2x').textContent = pct2x + '%';
+  document.getElementById('fs-neg').textContent = countNeg;
+  // Color the avg growth
+  const gEl = document.getElementById('fs-growth');
+  gEl.className = 'kpi-val' + (avgG < 0 ? ' growth-neg' : avgG > 0 ? ' growth-pos' : '');
 }}
 
 let curSort = {{col: null, asc: true}};
@@ -1201,6 +1415,23 @@ function sortTable(ci, key, num) {{
     return curSort.asc ? cmp : -cmp;
   }});
   rows.forEach(r => tb.appendChild(r));
+}}
+
+const CS={campus_js};
+let campSort={{col:null,asc:true}};
+function sortCampus(ci,key,num){{
+  const tb=document.querySelector('#campus-table tbody');
+  const rows=Array.from(tb.querySelectorAll('tr'));
+  if(campSort.col===ci) campSort.asc=!campSort.asc;
+  else campSort={{col:ci,asc:true}};
+  rows.sort((a,b)=>{{
+    const ai=parseInt(a.dataset.idx),bi=parseInt(b.dataset.idx);
+    let av=CS[ai][key],bv=CS[bi][key];
+    if(av==null) return 1; if(bv==null) return -1;
+    const cmp=num?(av-bv):String(av).localeCompare(String(bv));
+    return campSort.asc?cmp:-cmp;
+  }});
+  rows.forEach(r=>tb.appendChild(r));
 }}
 </script>
 
@@ -1231,8 +1462,8 @@ def generate_student_page(student, prev_student, next_student, position, total, 
     # Issue tags
     issue_tags = ""
     issue_tag_map = {
-        'NO_INSTRUCTION_APP': ('No Instruction App (G9+)', 'tag-red'),
-        'SHOULD_HAVE_MOBYMAX': ('Needs MobyMax', 'tag-orange'),
+        'NEEDS_HS_INSTRUCTION': ('Needs HS Reading Instruction', 'tag-red'),
+        'NEEDS_MM_INSTRUCTION': ('Needs MM Reading Instruction', 'tag-orange'),
         'OVER_TESTING': ('Over-Testing', 'tag-red'),
         'DOOM_LOOP': ('Doom Loop', 'tag-red'),
         'LOW_ENGAGEMENT': ('Low Engagement', 'tag-orange'),
@@ -1244,6 +1475,10 @@ def generate_student_page(student, prev_student, next_student, position, total, 
     for issue in s['issues']:
         label, cls = issue_tag_map.get(issue, (issue, 'tag-gray'))
         issue_tags += f'<span class="tag {cls}">{label}</span> '
+    # HS reading category tag on detail page
+    if s['hs_reading_category']:
+        cat_cls = 'tag-purple' if 'G9+' in s['hs_reading_category'] else 'tag-blue'
+        issue_tags += f' <span class="tag {cat_cls}">{s["hs_reading_category"]}</span>'
     if not issue_tags.strip():
         if s['growth'] is not None and s['growth'] > 0:
             issue_tags = '<span class="tag tag-green">Positive Growth</span>'
@@ -1297,18 +1532,20 @@ def generate_student_page(student, prev_student, next_student, position, total, 
     app_table_rows = ""
     if s['total_xp'] > 0:
         pct_i = s['instr_xp'] / s['total_xp'] * 100
+        pct_p = s['practice_xp'] / s['total_xp'] * 100
         pct_t = s['testing_xp'] / s['total_xp'] * 100
         pct_e = s['elit_xp'] / s['total_xp'] * 100
         pct_a = s['admin_xp'] / s['total_xp'] * 100
         app_bar_html = f"""<div class="stacked-bar">
           <div class="bar-seg instr" style="width:{pct_i:.1f}%" title="Instruction: {fmt_num(s['instr_xp'])} XP ({pct_i:.0f}%)"></div>
+          <div class="bar-seg practice" style="width:{pct_p:.1f}%" title="Practice: {fmt_num(s['practice_xp'])} XP ({pct_p:.0f}%)"></div>
           <div class="bar-seg test" style="width:{pct_t:.1f}%" title="Testing: {fmt_num(s['testing_xp'])} XP ({pct_t:.0f}%)"></div>
           <div class="bar-seg elit" style="width:{pct_e:.1f}%" title="Early Lit: {fmt_num(s['elit_xp'])} XP ({pct_e:.0f}%)"></div>
           <div class="bar-seg admin" style="width:{pct_a:.1f}%" title="Admin/Other: {fmt_num(s['admin_xp'])} XP ({pct_a:.0f}%)"></div>
         </div>"""
 
     for app in s['app_breakdown']:
-        cat_cls = {'Instruction': 'tag-green', 'Testing': 'tag-orange', 'Early Lit': 'tag-purple'}.get(app['category'], 'tag-gray')
+        cat_cls = {'Instruction': 'tag-green', 'Practice': 'tag-blue', 'Testing': 'tag-orange', 'Early Lit': 'tag-purple'}.get(app['category'], 'tag-gray')
         pct_of_total = round(app['xp'] / s['total_xp'] * 100, 1) if s['total_xp'] > 0 else 0
         app_table_rows += f"""<tr>
           <td>{app['app']}</td>
@@ -1322,6 +1559,7 @@ def generate_student_page(student, prev_student, next_student, position, total, 
 
     xp_section = ""
     if s['total_xp'] > 0 or s['app_breakdown']:
+        practice_legend = f'<span><span class="legend-dot" style="background:var(--primary);"></span> Practice ({fmt_num(s["practice_xp"])} XP, {fmt_num(s["pct_practice"])}%)</span>' if s['practice_xp'] > 0 else ''
         elit_legend = f'<span><span class="legend-dot" style="background:var(--purple);"></span> Early Lit ({fmt_num(s["elit_xp"])} XP)</span>' if s['elit_xp'] > 0 else ''
         admin_legend = f'<span><span class="legend-dot" style="background:#94A3B8;"></span> Other ({fmt_num(s["admin_xp"])} XP)</span>' if s['admin_xp'] > 0 else ''
         xp_section = f"""
@@ -1330,6 +1568,7 @@ def generate_student_page(student, prev_student, next_student, position, total, 
           {app_bar_html}
           <div class="bar-legend">
             <span><span class="legend-dot" style="background:var(--success);"></span> Instruction ({fmt_num(s['instr_xp'])} XP, {fmt_num(s['pct_instr'])}%)</span>
+            {practice_legend}
             <span><span class="legend-dot" style="background:var(--warning);"></span> Testing ({fmt_num(s['testing_xp'])} XP, {fmt_num(s['pct_testing'])}%)</span>
             {elit_legend}
             {admin_legend}
@@ -1481,7 +1720,7 @@ def generate_student_page(student, prev_student, next_student, position, total, 
     </div>
     <div class="badges">
       <span class="grade-badge">Grade {s['age_grade'] if s['age_grade'] else '?'}</span>
-      <span class="grade-badge">{s['level']}</span>
+      <span class="grade-badge">{s['level_display']}</span>
       <span class="grade-badge">HMG {fmt_num(s['hmg'])}</span>
       <span class="grade-badge">RIT {fmt_num(s['fall_rit'])} &rarr; {fmt_num(s['winter_rit'])}</span>
     </div>
@@ -1527,6 +1766,24 @@ def generate_student_page(student, prev_student, next_student, position, total, 
 </div>
 
 <div class="metric-card">
+  <h3>Grade</h3>
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-val">{s['age_grade'] if s['age_grade'] else '&mdash;'}</div>
+      <div class="metric-label">Age Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">{fmt_num(s['rit'])}</div>
+      <div class="metric-label">R90 Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">{s['reading_grade'] if s['reading_grade'] else 'N/A'}</div>
+      <div class="metric-label">Reading Grade</div>
+    </div>
+  </div>
+</div>
+
+<div class="metric-card">
   <h3>Session Flags</h3>
   <div class="metric-grid">
     <div class="metric"><div class="metric-val">{yes_no_html(s['put_time'])}</div><div class="metric-label">Put in Time?</div></div>
@@ -1563,7 +1820,7 @@ def generate_student_page(student, prev_student, next_student, position, total, 
 </div>
 
 <div class="footer">
-  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Generated Feb 2026
+  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Updated Feb 9, 2026
 </div>
 
 </body>

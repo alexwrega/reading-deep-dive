@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Luca S. - Reading 3+ Results Profile</title>
+<title>Jaiden B. - Reading 3+ Results Profile</title>
 <style>
 :root {
   --bg: #F8FAFC; --surface: #FFFFFF; --text: #0F172A; --muted: #475569; --border: #E2E8F0;
@@ -69,8 +69,8 @@ header .subtitle { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
 /* Tables */
 table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--border); }
 thead { background: var(--primary); color: white; }
-th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; }
-th:hover { background: rgba(255,255,255,0.1); }
+th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; background: var(--primary); color: white; transition: background 0.15s; }
+th:hover { background: var(--primary-hover); color: white; }
 th .sort-arrow { font-size: 0.65rem; margin-left: 3px; opacity: 0.4; }
 th.sorted .sort-arrow { opacity: 1; }
 td { padding: 8px; font-size: 0.83rem; border-bottom: 1px solid var(--border); }
@@ -141,6 +141,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 .stacked-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; background: var(--border); margin: 10px 0; }
 .bar-seg { height: 100%; }
 .bar-seg.instr { background: var(--success); }
+.bar-seg.practice { background: var(--primary); }
 .bar-seg.test { background: var(--warning); }
 .bar-seg.elit { background: var(--purple); }
 .bar-seg.admin { background: #94A3B8; }
@@ -149,7 +150,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* App table */
 .app-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--border); cursor: default; }
+.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: white; padding: 8px 8px; background: var(--primary); cursor: default; }
 .app-table td { padding: 8px; font-size: 0.85rem; border-bottom: 1px solid #F1F5F9; }
 
 /* RIT timeline */
@@ -178,8 +179,9 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* Test history table */
 .test-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; }
-.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); padding: 6px 6px; border-bottom: 2px solid var(--border); cursor: default; background: transparent; }
+.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: white; padding: 8px 6px; background: var(--primary); cursor: default; }
 .test-table td { padding: 6px; border-bottom: 1px solid #F1F5F9; }
+.app-table th:hover, .test-table th:hover { background: var(--primary-hover); }
 .test-table .pass { color: var(--success); font-weight: 600; }
 .test-table .fail { color: var(--danger); }
 
@@ -212,14 +214,14 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 <div class="profile-header">
   <div class="container" style="max-width: 960px;">
     <div>
-      <h1>Luca S.</h1>
-      <div style="font-size:0.85rem; color:rgba(255,255,255,0.75); margin-top:4px;">Alpha School Miami</div>
+      <h1>Jaiden B.</h1>
+      <div style="font-size:0.85rem; color:rgba(255,255,255,0.75); margin-top:4px;">GT School</div>
     </div>
     <div class="badges">
-      <span class="grade-badge">Grade 2</span>
-      <span class="grade-badge">L1</span>
-      <span class="grade-badge">HMG 2</span>
-      <span class="grade-badge">RIT 199 &rarr; 210</span>
+      <span class="grade-badge">Grade 9</span>
+      <span class="grade-badge">HS (G9+)</span>
+      <span class="grade-badge">HMG 12</span>
+      <span class="grade-badge">RIT 256 &rarr; 251</span>
     </div>
   </div>
 </div>
@@ -229,36 +231,54 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 <div class="nav-bar">
   <div>
     <a href="../index.html" class="nav-link back-link">&larr; Back to Reading 3+ Results</a>
-    <span class="position-label">&nbsp;&middot;&nbsp; Student 116 of 280</span>
+    <span class="position-label">&nbsp;&middot;&nbsp; Student 13 of 305</span>
   </div>
   <div>
-    <a href="angel_g.html" class="nav-link">&larr; Angel G.</a>
+    <a href="erika_r.html" class="nav-link">&larr; Erika R.</a>
      &nbsp;|&nbsp; 
-    <a href="marshall_j.html" class="nav-link">Marshall J. &rarr;</a>
+    <a href="otto_m.html" class="nav-link">Otto M. &rarr;</a>
   </div>
 </div>
 
 <div style="margin-bottom: 16px;">
-  <span class="tag tag-green">Positive Growth</span>
+  <span class="tag tag-red">Needs HS Reading Instruction</span> <span class="tag tag-yellow">Time ≠ Growth</span> <span class="tag tag-blue">At/Ahead of Grade</span>  <span class="tag tag-purple">HS (G9+)</span>
   
 </div>
 
 <div class="growth-hero">
   <div class="growth-box">
-    <div class="big-num growth-pos">+2</div>
+    <div class="big-num growth-neg">-5</div>
     <div class="label">RIT Growth (F&rarr;W)</div>
   </div>
   <div class="growth-box">
-    <div class="big-num ">90%</div>
+    <div class="big-num pct-ok">132%</div>
     <div class="label">% Expected Time</div>
   </div>
   <div class="growth-box">
-    <div class="big-num">67%</div>
+    <div class="big-num">0%</div>
     <div class="label">Instruction XP</div>
   </div>
   <div class="growth-box">
-    <div class="big-num">0</div>
+    <div class="big-num">3</div>
     <div class="label">Grade Gap</div>
+  </div>
+</div>
+
+<div class="metric-card">
+  <h3>Grade</h3>
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-val">9</div>
+      <div class="metric-label">Age Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">11</div>
+      <div class="metric-label">R90 Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">13</div>
+      <div class="metric-label">Reading Grade</div>
+    </div>
   </div>
 </div>
 
@@ -266,7 +286,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
   <h3>Session Flags</h3>
   <div class="metric-grid">
     <div class="metric"><div class="metric-val"><span class="pct-warn">No</span></div><div class="metric-label">Put in Time?</div></div>
-    <div class="metric"><div class="metric-val"><span class="pct-warn">No</span></div><div class="metric-label">Earned XP?</div></div>
+    <div class="metric"><div class="metric-val">Yes</div><div class="metric-label">Earned XP?</div></div>
     <div class="metric"><div class="metric-val">1</div><div class="metric-label">Grades Mastered</div></div>
     <div class="metric"><div class="metric-val">Yes</div><div class="metric-label">Mastered &ge;1?</div></div>
     <div class="metric"><div class="metric-val"><span class="pct-warn">No</span></div><div class="metric-label">Accuracy &gt;80%?</div></div>
@@ -277,23 +297,23 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
   <div class="metric-card">
     <h3>Time on Task</h3>
     <div class="metric-grid">
-      <div class="metric"><div class="metric-val">1,942</div><div class="metric-label">Reading Min</div></div>
+      <div class="metric"><div class="metric-val">2,846</div><div class="metric-label">Reading Min</div></div>
       <div class="metric"><div class="metric-val">2,150</div><div class="metric-label">Expected Min</div></div>
-      <div class="metric"><div class="metric-val ">90%</div><div class="metric-label">% of Expected</div></div>
-      <div class="metric"><div class="metric-val">22.6</div><div class="metric-label">Daily Avg Min</div></div>
+      <div class="metric"><div class="metric-val pct-ok">132%</div><div class="metric-label">% of Expected</div></div>
+      <div class="metric"><div class="metric-val">33.1</div><div class="metric-label">Daily Avg Min</div></div>
     </div>
   </div>
   
         <div class="metric-card">
           <h3>Year-over-Year</h3>
           <div class="rit-timeline">
-            <div class="rit-point muted"><div class="rit-val">&mdash;</div><div class="rit-label">Spring 25</div></div>
+            <div class="rit-point"><div class="rit-val">252</div><div class="rit-label">Spring 25</div></div>
             <div class="rit-arrow">&rarr;</div>
-            <div class="rit-point"><div class="rit-val">199</div><div class="rit-label">Fall 25</div></div>
+            <div class="rit-point"><div class="rit-val">256</div><div class="rit-label">Fall 25</div></div>
             <div class="rit-arrow">&rarr;</div>
-            <div class="rit-point"><div class="rit-val">210</div><div class="rit-label">Winter 26</div></div>
+            <div class="rit-point"><div class="rit-val">251</div><div class="rit-label">Winter 26</div></div>
           </div>
-          <p class="detail-line muted" style="margin-top:10px;">No Spring 2025 score available</p>
+          <p class="detail-line" style="margin-top:10px;"><span class="growth-neg">Lost 4 RIT over summer</span></p>
         </div>
 </div>
 
@@ -301,7 +321,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
         <div class="metric-card">
           <h3>Daily Activity Timeline (Aug &ndash; Jan)</h3>
           <div class="timeline-container">
-            <div class="timeline-bars"><div class="day-bar zero" title="2025-08-14: 0 min"></div><div class="day-bar zero" title="2025-08-15: 0 min"></div><div class="day-bar zero" title="2025-08-18: 0 min"></div><div class="day-bar zero" title="2025-08-25: 0 min"></div><div class="day-bar green" style="height:33%" title="2025-09-02: 31 min"></div><div class="day-bar green" style="height:71%" title="2025-09-03: 66 min"></div><div class="day-bar green" style="height:64%" title="2025-09-04: 60 min"></div><div class="day-bar blue" style="height:11%" title="2025-09-05: 10 min"></div><div class="day-bar green" style="height:63%" title="2025-09-08: 60 min"></div><div class="day-bar green" style="height:60%" title="2025-09-09: 56 min"></div><div class="day-bar orange" style="height:6%" title="2025-09-10: 6 min"></div><div class="day-bar green" style="height:28%" title="2025-09-11: 26 min"></div><div class="day-bar orange" style="height:7%" title="2025-09-12: 7 min"></div><div class="day-bar green" style="height:65%" title="2025-09-15: 61 min"></div><div class="day-bar green" style="height:45%" title="2025-09-16: 42 min"></div><div class="day-bar green" style="height:36%" title="2025-09-17: 34 min"></div><div class="day-bar blue" style="height:24%" title="2025-09-18: 22 min"></div><div class="day-bar green" style="height:100%" title="2025-09-19: 94 min"></div><div class="day-bar green" style="height:32%" title="2025-09-22: 30 min"></div><div class="day-bar green" style="height:45%" title="2025-09-23: 42 min"></div><div class="day-bar zero" title="2025-09-24: 0 min"></div><div class="day-bar green" style="height:36%" title="2025-09-25: 34 min"></div><div class="day-bar zero" title="2025-09-26: 0 min"></div><div class="day-bar green" style="height:67%" title="2025-09-29: 63 min"></div><div class="day-bar green" style="height:43%" title="2025-09-30: 41 min"></div><div class="day-bar green" style="height:59%" title="2025-10-01: 55 min"></div><div class="day-bar zero" title="2025-10-02: 0 min"></div><div class="day-bar green" style="height:53%" title="2025-10-03: 49 min"></div><div class="day-bar blue" style="height:17%" title="2025-10-13: 16 min"></div><div class="day-bar green" style="height:32%" title="2025-10-14: 30 min"></div><div class="day-bar green" style="height:73%" title="2025-10-15: 69 min"></div><div class="day-bar zero" title="2025-10-16: 0 min"></div><div class="day-bar zero" title="2025-10-17: 0 min"></div><div class="day-bar blue" style="height:11%" title="2025-10-20: 10 min"></div><div class="day-bar orange" style="height:8%" title="2025-10-21: 8 min"></div><div class="day-bar blue" style="height:16%" title="2025-10-22: 15 min"></div><div class="day-bar blue" style="height:13%" title="2025-10-23: 12 min"></div><div class="day-bar blue" style="height:23%" title="2025-10-24: 22 min"></div><div class="day-bar orange" style="height:7%" title="2025-10-27: 7 min"></div><div class="day-bar blue" style="height:25%" title="2025-10-28: 23 min"></div><div class="day-bar blue" style="height:12%" title="2025-10-29: 11 min"></div><div class="day-bar green" style="height:34%" title="2025-10-30: 32 min"></div><div class="day-bar blue" style="height:20%" title="2025-10-31: 18 min"></div><div class="day-bar zero" title="2025-11-03: 0 min"></div><div class="day-bar blue" style="height:18%" title="2025-11-04: 17 min"></div><div class="day-bar orange" style="height:5%" title="2025-11-05: 5 min"></div><div class="day-bar orange" style="height:5%" title="2025-11-06: 5 min"></div><div class="day-bar zero" title="2025-11-07: 0 min"></div><div class="day-bar zero" title="2025-11-10: 0 min"></div><div class="day-bar blue" style="height:20%" title="2025-11-11: 19 min"></div><div class="day-bar orange" style="height:10%" title="2025-11-12: 10 min"></div><div class="day-bar blue" style="height:13%" title="2025-11-13: 12 min"></div><div class="day-bar blue" style="height:26%" title="2025-11-14: 24 min"></div><div class="day-bar blue" style="height:12%" title="2025-11-17: 11 min"></div><div class="day-bar blue" style="height:13%" title="2025-11-18: 12 min"></div><div class="day-bar blue" style="height:21%" title="2025-11-19: 20 min"></div><div class="day-bar blue" style="height:21%" title="2025-11-20: 19 min"></div><div class="day-bar blue" style="height:14%" title="2025-11-21: 14 min"></div><div class="day-bar orange" style="height:6%" title="2025-12-01: 6 min"></div><div class="day-bar orange" style="height:4%" title="2025-12-02: 4 min"></div><div class="day-bar blue" style="height:18%" title="2025-12-03: 17 min"></div><div class="day-bar blue" style="height:22%" title="2025-12-04: 21 min"></div><div class="day-bar green" style="height:28%" title="2025-12-05: 27 min"></div><div class="day-bar blue" style="height:26%" title="2025-12-08: 25 min"></div><div class="day-bar green" style="height:28%" title="2025-12-09: 26 min"></div><div class="day-bar blue" style="height:17%" title="2025-12-10: 16 min"></div><div class="day-bar zero" title="2025-12-11: 0 min"></div><div class="day-bar blue" style="height:21%" title="2025-12-12: 20 min"></div><div class="day-bar zero" title="2025-12-15: 0 min"></div><div class="day-bar zero" title="2025-12-16: 0 min"></div><div class="day-bar green" style="height:39%" title="2025-12-17: 37 min"></div><div class="day-bar green" style="height:28%" title="2025-12-18: 26 min"></div><div class="day-bar zero" title="2025-12-19: 0 min"></div><div class="day-bar orange" style="height:4%" title="2026-01-05: 3 min"></div><div class="day-bar zero" title="2026-01-06: 0 min"></div><div class="day-bar zero" title="2026-01-07: 0 min"></div><div class="day-bar zero" title="2026-01-08: 0 min"></div><div class="day-bar orange" style="height:10%" title="2026-01-09: 10 min"></div><div class="day-bar blue" style="height:16%" title="2026-01-12: 15 min"></div><div class="day-bar blue" style="height:13%" title="2026-01-13: 12 min"></div><div class="day-bar orange" style="height:6%" title="2026-01-14: 6 min"></div><div class="day-bar blue" style="height:11%" title="2026-01-15: 10 min"></div><div class="day-bar orange" style="height:7%" title="2026-01-16: 7 min"></div><div class="day-bar orange" style="height:5%" title="2026-01-20: 5 min"></div><div class="day-bar orange" style="height:3%" title="2026-01-21: 3 min"></div><div class="day-bar green" style="height:49%" title="2026-01-22: 46 min"></div><div class="day-bar zero" title="2026-01-23: 0 min"></div></div>
+            <div class="timeline-bars"><div class="day-bar blue" style="height:22%" title="2025-08-14: 19 min"></div><div class="day-bar green" style="height:51%" title="2025-08-15: 45 min"></div><div class="day-bar blue" style="height:16%" title="2025-08-18: 14 min"></div><div class="day-bar green" style="height:44%" title="2025-08-25: 38 min"></div><div class="day-bar green" style="height:61%" title="2025-09-02: 53 min"></div><div class="day-bar green" style="height:58%" title="2025-09-03: 51 min"></div><div class="day-bar green" style="height:60%" title="2025-09-04: 53 min"></div><div class="day-bar green" style="height:40%" title="2025-09-05: 35 min"></div><div class="day-bar green" style="height:59%" title="2025-09-08: 52 min"></div><div class="day-bar blue" style="height:16%" title="2025-09-09: 14 min"></div><div class="day-bar green" style="height:53%" title="2025-09-10: 47 min"></div><div class="day-bar green" style="height:43%" title="2025-09-11: 38 min"></div><div class="day-bar green" style="height:47%" title="2025-09-12: 41 min"></div><div class="day-bar green" style="height:100%" title="2025-09-15: 88 min"></div><div class="day-bar zero" title="2025-09-16: 0 min"></div><div class="day-bar zero" title="2025-09-17: 0 min"></div><div class="day-bar zero" title="2025-09-18: 0 min"></div><div class="day-bar zero" title="2025-09-19: 0 min"></div><div class="day-bar zero" title="2025-09-22: 0 min"></div><div class="day-bar green" style="height:33%" title="2025-09-23: 29 min"></div><div class="day-bar green" style="height:35%" title="2025-09-24: 31 min"></div><div class="day-bar green" style="height:29%" title="2025-09-25: 26 min"></div><div class="day-bar green" style="height:38%" title="2025-09-26: 33 min"></div><div class="day-bar green" style="height:34%" title="2025-09-29: 30 min"></div><div class="day-bar blue" style="height:18%" title="2025-09-30: 16 min"></div><div class="day-bar blue" style="height:28%" title="2025-10-01: 24 min"></div><div class="day-bar orange" style="height:9%" title="2025-10-02: 8 min"></div><div class="day-bar zero" title="2025-10-03: 0 min"></div><div class="day-bar green" style="height:34%" title="2025-10-13: 30 min"></div><div class="day-bar green" style="height:29%" title="2025-10-14: 26 min"></div><div class="day-bar green" style="height:48%" title="2025-10-15: 43 min"></div><div class="day-bar green" style="height:58%" title="2025-10-16: 51 min"></div><div class="day-bar blue" style="height:22%" title="2025-10-17: 20 min"></div><div class="day-bar blue" style="height:16%" title="2025-10-20: 14 min"></div><div class="day-bar blue" style="height:12%" title="2025-10-21: 10 min"></div><div class="day-bar green" style="height:35%" title="2025-10-22: 30 min"></div><div class="day-bar green" style="height:58%" title="2025-10-23: 51 min"></div><div class="day-bar blue" style="height:24%" title="2025-10-24: 21 min"></div><div class="day-bar blue" style="height:21%" title="2025-10-27: 18 min"></div><div class="day-bar green" style="height:48%" title="2025-10-28: 42 min"></div><div class="day-bar blue" style="height:15%" title="2025-10-29: 13 min"></div><div class="day-bar green" style="height:38%" title="2025-10-30: 34 min"></div><div class="day-bar green" style="height:82%" title="2025-10-31: 72 min"></div><div class="day-bar green" style="height:32%" title="2025-11-03: 28 min"></div><div class="day-bar zero" title="2025-11-04: 0 min"></div><div class="day-bar green" style="height:89%" title="2025-11-05: 79 min"></div><div class="day-bar green" style="height:38%" title="2025-11-06: 33 min"></div><div class="day-bar zero" title="2025-11-07: 0 min"></div><div class="day-bar zero" title="2025-11-10: 0 min"></div><div class="day-bar zero" title="2025-11-11: 0 min"></div><div class="day-bar zero" title="2025-11-12: 0 min"></div><div class="day-bar green" style="height:74%" title="2025-11-13: 65 min"></div><div class="day-bar zero" title="2025-11-14: 0 min"></div><div class="day-bar zero" title="2025-11-17: 0 min"></div><div class="day-bar blue" style="height:28%" title="2025-11-18: 25 min"></div><div class="day-bar blue" style="height:28%" title="2025-11-19: 25 min"></div><div class="day-bar green" style="height:47%" title="2025-11-20: 41 min"></div><div class="day-bar zero" title="2025-11-21: 0 min"></div><div class="day-bar green" style="height:38%" title="2025-12-01: 33 min"></div><div class="day-bar blue" style="height:28%" title="2025-12-02: 24 min"></div><div class="day-bar green" style="height:44%" title="2025-12-03: 39 min"></div><div class="day-bar green" style="height:58%" title="2025-12-04: 51 min"></div><div class="day-bar blue" style="height:26%" title="2025-12-05: 23 min"></div><div class="day-bar blue" style="height:24%" title="2025-12-08: 22 min"></div><div class="day-bar blue" style="height:19%" title="2025-12-09: 17 min"></div><div class="day-bar green" style="height:48%" title="2025-12-10: 42 min"></div><div class="day-bar green" style="height:57%" title="2025-12-11: 50 min"></div><div class="day-bar green" style="height:48%" title="2025-12-12: 42 min"></div><div class="day-bar green" style="height:29%" title="2025-12-15: 25 min"></div><div class="day-bar green" style="height:37%" title="2025-12-16: 33 min"></div><div class="day-bar green" style="height:47%" title="2025-12-17: 41 min"></div><div class="day-bar green" style="height:69%" title="2025-12-18: 61 min"></div><div class="day-bar green" style="height:31%" title="2025-12-19: 27 min"></div><div class="day-bar blue" style="height:17%" title="2026-01-05: 15 min"></div><div class="day-bar green" style="height:39%" title="2026-01-06: 35 min"></div><div class="day-bar green" style="height:53%" title="2026-01-07: 46 min"></div><div class="day-bar green" style="height:76%" title="2026-01-08: 67 min"></div><div class="day-bar blue" style="height:25%" title="2026-01-09: 22 min"></div><div class="day-bar blue" style="height:15%" title="2026-01-12: 13 min"></div><div class="day-bar green" style="height:30%" title="2026-01-13: 26 min"></div><div class="day-bar green" style="height:52%" title="2026-01-14: 46 min"></div><div class="day-bar blue" style="height:20%" title="2026-01-15: 17 min"></div><div class="day-bar green" style="height:39%" title="2026-01-16: 34 min"></div><div class="day-bar green" style="height:49%" title="2026-01-20: 43 min"></div><div class="day-bar green" style="height:40%" title="2026-01-21: 35 min"></div><div class="day-bar blue" style="height:20%" title="2026-01-22: 18 min"></div><div class="day-bar zero" title="2026-01-23: 0 min"></div></div>
             <div class="timeline-axis">
               <span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span>
             </div>
@@ -318,67 +338,45 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
         <div class="metric-card">
           <h3>XP Breakdown by Category</h3>
           <div class="stacked-bar">
-          <div class="bar-seg instr" style="width:67.1%" title="Instruction: 1,594 XP (67%)"></div>
-          <div class="bar-seg test" style="width:9.5%" title="Testing: 225 XP (9%)"></div>
-          <div class="bar-seg elit" style="width:19.6%" title="Early Lit: 465 XP (20%)"></div>
-          <div class="bar-seg admin" style="width:3.8%" title="Admin/Other: 90 XP (4%)"></div>
+          <div class="bar-seg instr" style="width:0.0%" title="Instruction: 0 XP (0%)"></div>
+          <div class="bar-seg practice" style="width:84.6%" title="Practice: 2,643 XP (85%)"></div>
+          <div class="bar-seg test" style="width:15.4%" title="Testing: 480 XP (15%)"></div>
+          <div class="bar-seg elit" style="width:0.0%" title="Early Lit: 0 XP (0%)"></div>
+          <div class="bar-seg admin" style="width:0.0%" title="Admin/Other: 0 XP (0%)"></div>
         </div>
           <div class="bar-legend">
-            <span><span class="legend-dot" style="background:var(--success);"></span> Instruction (1,594 XP, 67%)</span>
-            <span><span class="legend-dot" style="background:var(--warning);"></span> Testing (225 XP, 10%)</span>
-            <span><span class="legend-dot" style="background:var(--purple);"></span> Early Lit (465 XP)</span>
-            <span><span class="legend-dot" style="background:#94A3B8;"></span> Other (90 XP)</span>
+            <span><span class="legend-dot" style="background:var(--success);"></span> Instruction (0 XP, 0%)</span>
+            <span><span class="legend-dot" style="background:var(--primary);"></span> Practice (2,643 XP, 85%)</span>
+            <span><span class="legend-dot" style="background:var(--warning);"></span> Testing (480 XP, 15%)</span>
+            
+            
           </div>
           <table class="app-table">
             <thead><tr><th>App</th><th>Category</th><th>XP</th><th>Minutes</th><th>Mastered</th><th>Accuracy</th><th>% of Total</th></tr></thead>
             <tbody><tr>
-          <td>MobyMax</td>
-          <td><span class="tag tag-green">Instruction</span></td>
-          <td>1,240</td>
-          <td>649</td>
-          <td>124</td>
-          <td>77%</td>
-          <td>52.2%</td>
-        </tr><tr>
-          <td>ClearFluency</td>
-          <td><span class="tag tag-purple">Early Lit</span></td>
-          <td>465</td>
-          <td>837</td>
-          <td>31</td>
-          <td>73%</td>
-          <td>19.6%</td>
-        </tr><tr>
           <td>Alpha Read</td>
-          <td><span class="tag tag-green">Instruction</span></td>
-          <td>354</td>
-          <td>428</td>
-          <td>0</td>
-          <td>84%</td>
-          <td>14.9%</td>
+          <td><span class="tag tag-blue">Practice</span></td>
+          <td>2,643</td>
+          <td>2,619</td>
+          <td>6</td>
+          <td>71%</td>
+          <td>84.6%</td>
         </tr><tr>
           <td>Mastery Track</td>
           <td><span class="tag tag-orange">Testing</span></td>
-          <td>225</td>
-          <td>36</td>
+          <td>360</td>
+          <td>227</td>
           <td>0</td>
-          <td>0%</td>
-          <td>9.5%</td>
+          <td>44%</td>
+          <td>11.5%</td>
         </tr><tr>
-          <td>Timeback UI</td>
-          <td><span class="tag tag-gray">Admin/Other</span></td>
-          <td>90</td>
+          <td>100 for 100</td>
+          <td><span class="tag tag-orange">Testing</span></td>
+          <td>120</td>
           <td>0</td>
           <td>0</td>
-          <td>90%</td>
+          <td>88%</td>
           <td>3.8%</td>
-        </tr><tr>
-          <td>Lalilo</td>
-          <td><span class="tag tag-purple">Early Lit</span></td>
-          <td>0</td>
-          <td>-7</td>
-          <td>0</td>
-          <td>0%</td>
-          <td>0.0%</td>
         </tr></tbody>
           </table>
         </div>
@@ -391,72 +389,76 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
           
           <div class="metric-grid">
             <div class="metric"><div class="metric-val">6</div><div class="metric-label">Total Tests</div></div>
-            <div class="metric"><div class="metric-val">3</div><div class="metric-label">Passed (&ge;90%)</div></div>
-            <div class="metric"><div class="metric-val pct-warn">50%</div><div class="metric-label">Pass Rate</div></div>
+            <div class="metric"><div class="metric-val">2</div><div class="metric-label">Passed (&ge;90%)</div></div>
+            <div class="metric"><div class="metric-val pct-warn">33%</div><div class="metric-label">Pass Rate</div></div>
           </div>
-          <p class="detail-line" style="margin-top:8px;"><strong>Grades tested:</strong> G0, G1, G2, G3</p>
+          <p class="detail-line" style="margin-top:8px;"><strong>Grades tested:</strong> G11, G12</p>
           <div style="overflow-x:auto; margin-top:12px;">
           <table class="test-table">
             <thead><tr><th>Date</th><th>Test</th><th>Grade</th><th>Score</th><th>Result</th><th>Type</th><th>Origin</th></tr></thead>
             <tbody><tr>
-              <td>2025-08-14</td>
-              <td>Alpha 2024 Reading K.2</td>
-              <td>G0</td>
-              <td class="pass">95%</td>
-              <td class="pass">Pass</td>
-              <td>Placement</td>
-              <td>TimeBack</td>
-            </tr><tr>
-              <td>2025-08-20</td>
-              <td>Alpha 2024 Reading 1.3</td>
-              <td>G1</td>
-              <td class="fail">85%</td>
-              <td class="fail">Fail</td>
-              <td>Placement</td>
-              <td>TimeBack</td>
-            </tr><tr>
-              <td>2025-08-27</td>
-              <td>Alpha 2024 Reading 1.4</td>
-              <td>G1</td>
-              <td class="fail">85%</td>
-              <td class="fail">Fail</td>
-              <td>Test Out</td>
-              <td>TimeBack</td>
-            </tr><tr>
-              <td>2025-09-24</td>
-              <td>Alpha 2024 Reading 1.5</td>
-              <td>G1</td>
-              <td class="pass">95%</td>
-              <td class="pass">Pass</td>
-              <td>Test Out</td>
-              <td>TimeBack</td>
-            </tr><tr>
-              <td>2025-09-26</td>
-              <td>Alpha 2024 Reading 2.3</td>
-              <td>G2</td>
-              <td class="pass">90%</td>
-              <td class="pass">Pass</td>
-              <td>Test Out</td>
-              <td>TimeBack</td>
-            </tr><tr>
               <td>2025-10-15</td>
-              <td>Alpha ELA STAAR G3.2013</td>
-              <td>G3</td>
-              <td class="fail">48%</td>
+              <td>Alpha Standardized Reading G11.7</td>
+              <td>G11</td>
+              <td class="fail">70%</td>
+              <td class="fail">Fail</td>
+              <td>End of Course</td>
+              <td>TimeBack</td>
+            </tr><tr>
+              <td>2025-11-06</td>
+              <td>Alpha Standardized Reading G11.5</td>
+              <td>G11</td>
+              <td class="fail">86%</td>
+              <td class="fail">Fail</td>
+              <td>Placement</td>
+              <td>100 for 100</td>
+            </tr><tr>
+              <td>2025-11-13</td>
+              <td>Alpha Standardized Reading G11.4</td>
+              <td>G11</td>
+              <td class="fail">86%</td>
               <td class="fail">Fail</td>
               <td>Test Out</td>
+              <td>100 for 100</td>
+            </tr><tr>
+              <td>2025-12-17</td>
+              <td>Alpha Standardized Reading G11.8</td>
+              <td>G11</td>
+              <td class="fail">88%</td>
+              <td class="fail">Fail</td>
+              <td>End of Course</td>
               <td>TimeBack</td>
+            </tr><tr>
+              <td>2026-01-29</td>
+              <td>Alpha Standardized Reading G11.9</td>
+              <td>G11</td>
+              <td class="pass">97%</td>
+              <td class="pass">Pass</td>
+              <td>Test Out</td>
+              <td>100 for 100</td>
+            </tr><tr>
+              <td>2026-01-30</td>
+              <td>Alpha ELA STAAR G12.2015</td>
+              <td>G12</td>
+              <td class="pass">100%</td>
+              <td class="pass">Pass</td>
+              <td>Test Out</td>
+              <td>100 for 100</td>
             </tr></tbody>
           </table>
           </div>
         </div>
 
 
+        <div class="metric-card">
+          <h3>Coach Notes</h3>
+          <p class="comment-text">High School</p>
+        </div>
 
 </div>
 
 <div class="footer">
-  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Generated Feb 2026
+  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Updated Feb 9, 2026
 </div>
 
 </body>

@@ -69,8 +69,8 @@ header .subtitle { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
 /* Tables */
 table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--border); }
 thead { background: var(--primary); color: white; }
-th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; }
-th:hover { background: rgba(255,255,255,0.1); }
+th { padding: 10px 8px; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; user-select: none; background: var(--primary); color: white; transition: background 0.15s; }
+th:hover { background: var(--primary-hover); color: white; }
 th .sort-arrow { font-size: 0.65rem; margin-left: 3px; opacity: 0.4; }
 th.sorted .sort-arrow { opacity: 1; }
 td { padding: 8px; font-size: 0.83rem; border-bottom: 1px solid var(--border); }
@@ -141,6 +141,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 .stacked-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; background: var(--border); margin: 10px 0; }
 .bar-seg { height: 100%; }
 .bar-seg.instr { background: var(--success); }
+.bar-seg.practice { background: var(--primary); }
 .bar-seg.test { background: var(--warning); }
 .bar-seg.elit { background: var(--purple); }
 .bar-seg.admin { background: #94A3B8; }
@@ -149,7 +150,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* App table */
 .app-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 2px solid var(--border); cursor: default; }
+.app-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: white; padding: 8px 8px; background: var(--primary); cursor: default; }
 .app-table td { padding: 8px; font-size: 0.85rem; border-bottom: 1px solid #F1F5F9; }
 
 /* RIT timeline */
@@ -178,8 +179,9 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 
 /* Test history table */
 .test-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82rem; }
-.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); padding: 6px 6px; border-bottom: 2px solid var(--border); cursor: default; background: transparent; }
+.test-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; color: white; padding: 8px 6px; background: var(--primary); cursor: default; }
 .test-table td { padding: 6px; border-bottom: 1px solid #F1F5F9; }
+.app-table th:hover, .test-table th:hover { background: var(--primary-hover); }
 .test-table .pass { color: var(--success); font-weight: 600; }
 .test-table .fail { color: var(--danger); }
 
@@ -229,7 +231,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 <div class="nav-bar">
   <div>
     <a href="../index.html" class="nav-link back-link">&larr; Back to Reading 3+ Results</a>
-    <span class="position-label">&nbsp;&middot;&nbsp; Student 190 of 280</span>
+    <span class="position-label">&nbsp;&middot;&nbsp; Student 193 of 305</span>
   </div>
   <div>
     <a href="dax_h.html" class="nav-link">&larr; Dax H.</a>
@@ -253,12 +255,30 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
     <div class="label">% Expected Time</div>
   </div>
   <div class="growth-box">
-    <div class="big-num">89%</div>
+    <div class="big-num">55%</div>
     <div class="label">Instruction XP</div>
   </div>
   <div class="growth-box">
     <div class="big-num">&mdash;</div>
     <div class="label">Grade Gap</div>
+  </div>
+</div>
+
+<div class="metric-card">
+  <h3>Grade</h3>
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-val">2</div>
+      <div class="metric-label">Age Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">3</div>
+      <div class="metric-label">R90 Grade</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">N/A</div>
+      <div class="metric-label">Reading Grade</div>
+    </div>
   </div>
 </div>
 
@@ -318,13 +338,15 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
         <div class="metric-card">
           <h3>XP Breakdown by Category</h3>
           <div class="stacked-bar">
-          <div class="bar-seg instr" style="width:89.1%" title="Instruction: 1,668 XP (89%)"></div>
+          <div class="bar-seg instr" style="width:54.6%" title="Instruction: 1,022 XP (55%)"></div>
+          <div class="bar-seg practice" style="width:34.5%" title="Practice: 646 XP (34%)"></div>
           <div class="bar-seg test" style="width:9.6%" title="Testing: 180 XP (10%)"></div>
           <div class="bar-seg elit" style="width:1.3%" title="Early Lit: 25 XP (1%)"></div>
           <div class="bar-seg admin" style="width:0.0%" title="Admin/Other: 0 XP (0%)"></div>
         </div>
           <div class="bar-legend">
-            <span><span class="legend-dot" style="background:var(--success);"></span> Instruction (1,668 XP, 89%)</span>
+            <span><span class="legend-dot" style="background:var(--success);"></span> Instruction (1,022 XP, 55%)</span>
+            <span><span class="legend-dot" style="background:var(--primary);"></span> Practice (646 XP, 34%)</span>
             <span><span class="legend-dot" style="background:var(--warning);"></span> Testing (180 XP, 10%)</span>
             <span><span class="legend-dot" style="background:var(--purple);"></span> Early Lit (25 XP)</span>
             
@@ -341,7 +363,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
           <td>54.6%</td>
         </tr><tr>
           <td>Alpha Read</td>
-          <td><span class="tag tag-green">Instruction</span></td>
+          <td><span class="tag tag-blue">Practice</span></td>
           <td>646</td>
           <td>1,409</td>
           <td>0</td>
@@ -408,7 +430,7 @@ a.student-link:hover { text-decoration: underline; color: var(--primary-hover); 
 </div>
 
 <div class="footer">
-  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Generated Feb 2026
+  Reading 3+ Results Profile &middot; Winter 2025-26 MAP &middot; Updated Feb 9, 2026
 </div>
 
 </body>
